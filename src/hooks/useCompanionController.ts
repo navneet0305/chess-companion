@@ -192,18 +192,32 @@ export function useCompanionController({
     return () => clearTimeout(timer);
   }, [latestEvent, speakLine, activeBet, triggerSkit]);
 
+  // Conversational idle check-in: speaks up gently if player pauses to think for a while,
+  // or mixes in a silent body gesture if he already spoke recently
   useEffect(() => {
     if (status !== 'playing' || isThinking) return;
 
     const idleTimer = setTimeout(() => {
-      const gesture = getSilentGesture('good_move');
-      setCurrentText(gesture.text);
-      setIsGestureOnly(true);
-      setAnimationState(gesture.animation);
-    }, 22000);
+      const msSinceSpoken = Date.now() - lastSpokenRef.current;
+      if (msSinceSpoken > 18000) {
+        const pick = getContextualDialogue(personalityRef.current, 'idle_thinking', {
+          ...liveContextRef.current,
+          character: characterRef.current,
+        });
+        setCurrentText(pick.text);
+        setIsGestureOnly(false);
+        setAnimationState(pick.animation);
+        speakLine(pick.text, personalityRef.current);
+      } else {
+        const gesture = getSilentGesture('good_move');
+        setCurrentText(gesture.text);
+        setIsGestureOnly(true);
+        setAnimationState(gesture.animation);
+      }
+    }, 19000);
 
     return () => clearTimeout(idleTimer);
-  }, [latestEvent, status, isThinking]);
+  }, [latestEvent, status, isThinking, speakLine]);
 
   const handleCompanionClick = useCallback(() => {
     const currentPersonality = personalityRef.current;

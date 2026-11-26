@@ -11,6 +11,7 @@ export interface DialogueContext {
   moveSan?: string;
   capturedPieceName?: string;
   moveNumber?: number;
+  isPlayerMove?: boolean;
   evalScore?: number; // centipawns from White's perspective
   playerColor?: 'w' | 'b';
   bestMove?: string | null;
@@ -58,28 +59,58 @@ const CHARACTER_BONUS_LINES: Partial<
 > = {
   bruno: {
     start: [
-      { text: "Ah, another masterpiece in the making! Try not to embarrass my turtleneck.", animation: 'confident' },
-      { text: "Magnificent! Let us paint pure chaos across these 64 squares!", animation: 'excited' },
+      { text: "Ah, another masterpiece in the making! What opening are we cooking up today?", animation: 'confident' },
+      { text: "Alright partner, it's you and me against the machine. Ready when you are!", animation: 'excited' },
+      { text: "Let's paint some chaos across these 64 squares — don't leave me hanging on move four!", animation: 'happy' },
     ],
     brilliant: [
-      { text: "BRAVO! *kisses fingertips* That move belongs in the Louvre!", animation: 'celebrating' },
-      { text: "Mamma mia! Even I dropped my monocle watching that brilliance!", animation: 'shocked' },
+      { text: "BRAVO! Wait, did you actually calculate that, or are we just vibing at Grandmaster level?!", animation: 'celebrating' },
+      { text: "Mamma mia! Even I dropped my monocle watching that brilliance! Keep going!", animation: 'shocked' },
+    ],
+    good_move: [
+      { text: "Ooh, now that actually had a plan behind it! What are we targeting next?", animation: 'happy' },
+      { text: "Look at us looking respectable! Keep tightening the screws on them.", animation: 'confident' },
+      { text: "Not bad at all — my mustache approves of that square.", animation: 'happy' },
+    ],
+    capture: [
+      { text: "Yoink! Clean snag — are we hunting their King next or picking off more pawns?", animation: 'happy' },
+      { text: "That's one less defender in our way. Feel the momentum shifting?", animation: 'confident' },
+    ],
+    check: [
+      { text: "CHECK! Look at their King scrambling — think we can keep the attack rolling?", animation: 'excited' },
+    ],
+    castling: [
+      { text: "King tucked in safe and cozy! Now let's wake those rooks up, yeah?", animation: 'confident' },
+    ],
+    opponent_blunder: [
+      { text: "Wait a second — did Stockfish just gift us that?! Tell me you see the punishment!", animation: 'excited' },
+    ],
+    hanging_piece: [
+      { text: "Psst — quick sanity check, is that piece defended or are we donating to charity?", animation: 'nervous' },
+    ],
+    missed_opportunity: [
+      { text: "Oof, we had a real knockout punch right there! Catch it next turn, okay?", animation: 'facepalm' },
+    ],
+    idle_thinking: [
+      { text: "So what's the grand plan here? Don't tell me you're improvising again...", animation: 'thinking' },
+      { text: "I'm listening — you thinking deep tactics or staring at their knight like me?", animation: 'idle' },
+      { text: "Take your time, partner. Good moves beat fast blunders every day of the week!", animation: 'confident' },
     ],
     blunder: [
-      { text: "OH THE HORROR! My mustache is curling in pure tragedy!", animation: 'facepalm' },
-      { text: "Excuse me, was that a chess move or modern interpretive comedy?!", animation: 'shocked' },
+      { text: "OH THE HORROR! My mustache is curling in pure tragedy! How do we wiggle out of this?", animation: 'facepalm' },
+      { text: "Excuse me, was that a tactical gamble or did your finger slip?! Be honest with me!", animation: 'shocked' },
     ],
     capture_queen: [
-      { text: "THE QUEEN HAS LEFT THE OPERA! Absolute standing ovation!", animation: 'celebrating' },
+      { text: "THE QUEEN HAS LEFT THE OPERA! Tell me you're feeling unstoppable right now!", animation: 'celebrating' },
     ],
     lost_queen: [
-      { text: "NOT THE QUEEN! Somebody play the sad violin right now!", animation: 'facepalm' },
+      { text: "NOT THE QUEEN! Okay, deep breaths — we can still swindle a draw or miracle!", animation: 'facepalm' },
     ],
     interaction_click: [
-      { text: "Yes, yes, admire the mustache — now calculate before Stockfish eats us!", animation: 'confident' },
-      { text: "I'm not saying we're losing, I'm just saying my turtleneck is sweating.", animation: 'nervous' },
-      { text: "Remember: confidence is 90% posture and 10% not hanging your Rook!", animation: 'happy' },
-      { text: "Ooh, a poke! Careful, you'll smudge my theatrical dignity!", animation: 'shocked' },
+      { text: "Yes, yes, admire the mustache — now tell me your next idea before Stockfish eats us!", animation: 'confident' },
+      { text: "I'm not saying we're in trouble, I'm just saying my turtleneck is sweating.", animation: 'nervous' },
+      { text: "Between us, confidence is 90% posture and 10% not hanging your Rook!", animation: 'happy' },
+      { text: "Hey! Careful poking the maestro — we've got a game to win here!", animation: 'shocked' },
     ],
   },
   luffy: {
@@ -172,8 +203,8 @@ const CHARACTER_BONUS_LINES: Partial<
 };
 
 /**
- * Generates dynamic, move-specific comments so the companion references
- * the exact move, piece, and board evaluation instead of repeating static lines.
+ * Generates conversational, move-specific comments that distinguish the player's
+ * moves from Stockfish's replies, referencing exact moves, pieces, and eval state.
  */
 function buildDynamicMoveLines(
   event: ChessEvent,
@@ -181,32 +212,62 @@ function buildDynamicMoveLines(
 ): DialogueEntry[] {
   if (!ctx) return [];
   const lines: DialogueEntry[] = [];
-  const { moveSan, capturedPieceName, moveNumber } = ctx;
+  const { moveSan, capturedPieceName, moveNumber, isPlayerMove, evalScore, playerColor } = ctx;
+  const playerIsWhite = (playerColor || 'w') === 'w';
+  const advCp = evalScore !== undefined ? (playerIsWhite ? evalScore : -evalScore) : 0;
 
   if (moveSan && event === 'good_move') {
-    lines.push(
-      { text: `${moveSan} — clean, purposeful, and keeps the pieces coordinated.`, animation: 'happy' },
-      { text: `Playing ${moveSan} on move ${moveNumber || ''} gives us real breathing room!`, animation: 'confident' },
-      { text: `${moveSan} looks sharp! Let's see how the engine answers that.`, animation: 'thinking' }
-    );
+    if (isPlayerMove === false) {
+      lines.push(
+        { text: `Hmm, Stockfish just went ${moveSan}. What do you think — ignore it or counter right back?`, animation: 'thinking' },
+        { text: `Okay, they played ${moveSan}. Notice anything sneaky they're trying to set up?`, animation: 'idle' },
+        { text: `${moveSan} from the engine... alright, your turn! Where are we putting pressure next?`, animation: 'confident' }
+      );
+    } else {
+      lines.push(
+        { text: `${moveSan} — clean and purposeful! Feeling good about this setup?`, animation: 'happy' },
+        { text: `Playing ${moveSan} on move ${moveNumber || ''} gives us real room to work with!`, animation: 'confident' },
+        { text: `${moveSan} looks sharp! Let's see how Stockfish tries to answer that.`, animation: 'thinking' }
+      );
+      if (advCp >= 160) {
+        lines.push({
+          text: `We're clearly ahead after ${moveSan} — stay patient and don't give them cheap counterplay!`,
+          animation: 'confident',
+        });
+      } else if (advCp <= -160) {
+        lines.push({
+          text: `Things are spicy after ${moveSan} — let's keep creating problems for them!`,
+          animation: 'nervous',
+        });
+      }
+    }
   }
 
   if (capturedPieceName && event === 'capture') {
-    lines.push(
-      { text: `Nice! Grabbing their ${capturedPieceName} with ${moveSan || 'that strike'} tilts the balance!`, animation: 'happy' },
-      { text: `Goodbye, enemy ${capturedPieceName}! Clean trade.`, animation: 'confident' }
-    );
+    if (isPlayerMove === false) {
+      lines.push(
+        { text: `Hey! Stockfish took our ${capturedPieceName} with ${moveSan || 'that strike'} — are we trading back?`, animation: 'shocked' },
+        { text: `There goes our ${capturedPieceName}. No worries, make sure the recapture works for us!`, animation: 'thinking' }
+      );
+    } else {
+      lines.push(
+        { text: `Nice! Grabbing their ${capturedPieceName} with ${moveSan || 'that move'} feels great — keep pressing?`, animation: 'happy' },
+        { text: `Goodbye, enemy ${capturedPieceName}! That opens up the board nicely for us.`, animation: 'confident' }
+      );
+    }
   }
 
   if (moveSan && event === 'check') {
     lines.push(
-      { text: `${moveSan}! Keep that enemy King dancing under pressure!`, animation: 'excited' }
+      isPlayerMove === false
+        ? { text: `Whoa, ${moveSan} puts us in check! Step somewhere safe and keep cool.`, animation: 'nervous' }
+        : { text: `${moveSan}! Check! Look at that enemy King sweating — can we follow up?`, animation: 'excited' }
     );
   }
 
   if (moveSan && event === 'blunder') {
     lines.push(
-      { text: `Yikes... ${moveSan} just opened the door wide for Stockfish!`, animation: 'shocked' }
+      { text: `Wait... ${moveSan} might let Stockfish in! Take a breath, let's see how we defend.`, animation: 'shocked' }
     );
   }
 
@@ -239,27 +300,47 @@ export function getContextualDialogue(
 }
 
 /**
- * Companion only speaks aloud when truly required (major turning points,
- * end of game, or direct user interaction). On normal moves, he reacts
- * silently with animated body gestures and facial expressions!
+ * Balanced conversational cadence:
+ * - Always speaks on start/end/direct interaction and major turning points
+ * - Speaks conversationally on many captures, checks, and routine turns without talking over every single ply
+ * - Mixes spoken banter with silent animated gestures so he feels natural and alive
  */
 export function shouldSpeakForEvent(
   event: ChessEvent,
   msSinceLastSpoken: number
 ): boolean {
-  // Always speak on game-ending or direct interaction events
-  if (['victory', 'defeat', 'draw', 'interaction_click'].includes(event)) {
+  // Always speak on game start/end or direct user interaction
+  if (['start', 'victory', 'defeat', 'draw', 'interaction_click', 'idle_thinking'].includes(event)) {
     return msSinceLastSpoken > 800;
   }
 
-  // Only speak on huge turning points (Queen captures, Brilliants, Blunders) with a generous cooldown
-  if (['capture_queen', 'lost_queen', 'brilliant', 'blunder'].includes(event)) {
-    return msSinceLastSpoken > 14000;
+  // High-priority turning points & tactical moments: speak reliably with brief cooldown
+  if (
+    [
+      'capture_queen',
+      'lost_queen',
+      'capture_major',
+      'brilliant',
+      'blunder',
+      'opponent_blunder',
+      'check',
+      'hanging_piece',
+      'lost_material',
+      'missed_opportunity',
+    ].includes(event)
+  ) {
+    return msSinceLastSpoken > 3200;
   }
 
-  // All routine moves, normal captures, checks, castling, start, idle:
-  // React silently with expressive body gestures instead of talking!
-  return false;
+  // Normal captures & castling: usually speaks conversationally (~75%) unless spoken very recently
+  if (['capture', 'castling'].includes(event)) {
+    if (msSinceLastSpoken > 9000) return true;
+    return msSinceLastSpoken > 4500 && Math.random() < 0.75;
+  }
+
+  // Routine moves: speak about half the time once cooled down (and guarantee if quiet > 11s)
+  if (msSinceLastSpoken > 11000) return true;
+  return msSinceLastSpoken > 5500 && Math.random() < 0.5;
 }
 
 const SILENT_GESTURES: Record<

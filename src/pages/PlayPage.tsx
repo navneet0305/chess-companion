@@ -184,6 +184,8 @@ export default function PlayPage() {
         moveSan: move.san,
         capturedPieceName: move.captured ? pieceNames[move.captured] : undefined,
         moveNumber: Math.ceil((moveIndex + 1) / 2),
+        isPlayerMove,
+        evalScore: evalAfter.score,
       };
 
       // Priority Companion Reactions
