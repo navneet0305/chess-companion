@@ -19,7 +19,7 @@ export default function Companion3D({
   state = 'idle',
   skit = 'none',
   isSpeaking = false,
-  size = 152,
+  size = 188,
   freeRoam = false,
   onClick,
 }: Companion3DProps) {
@@ -120,9 +120,9 @@ export default function Companion3D({
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 50);
-    // Full-body camera framing showing floating crown down to chunky purple sneakers
-    camera.position.set(0, 0.08, 7.25);
-    camera.lookAt(0, 0.04, 0);
+    // Tightly framed camera centering character from floating crown to chunky sneakers with generous scale
+    camera.position.set(0, 0.38, 5.85);
+    camera.lookAt(0, 0.36, 0);
 
     // ─── Studio 3-Point Lighting ──────────────────────────────────────────────
     const hemiLight = new THREE.HemisphereLight(0xfffaf2, 0x3b2a5e, 1.15);
@@ -428,7 +428,8 @@ export default function Companion3D({
 
       mouthHole.scale.y = lerp(mouthHole.scale.y, mouthScaleY, 0.26);
       mouthHole.scale.x = lerp(mouthHole.scale.x, mouthScaleX, 0.26);
-      tongueMesh.scale.setScalar(lerp(tongueMesh.scale.x, tongueVisibleScale, 0.24));
+      tongueMesh.visible = false;
+      tongueMesh.scale.set(0, 0, 0);
       mouthGroup.rotation.z = lerp(mouthGroup.rotation.z, 0.08 + Math.sin(t * 2) * 0.02, 0.15);
 
       // Floating crown & vibe doodle animation

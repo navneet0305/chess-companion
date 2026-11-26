@@ -46,6 +46,18 @@ export default function CompanionFloatingPresence({
   palette,
   onCompanionClick,
 }: CompanionFloatingPresenceProps) {
+  const [avatarSize, setAvatarSize] = React.useState(180);
+
+  React.useEffect(() => {
+    const updateSize = () => {
+      // Responsive sizing: generous 188px on desktop/tablet, 158px on compact mobile
+      setAvatarSize(window.innerWidth < 440 ? 158 : 188);
+    };
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
   return (
     <motion.div
       drag={freeRoam}
@@ -65,7 +77,7 @@ export default function CompanionFloatingPresence({
             framed={false}
             onClick={onCompanionClick}
             isSpeaking={isSpeaking}
-            size={148}
+            size={avatarSize}
             character={character}
             headwear={headwear}
             accessory={accessory}

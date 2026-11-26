@@ -484,7 +484,7 @@ const SILENT_GESTURES: Record<
     { text: '*hits a cool finger-gun point with a smug grin*', animation: 'happy' },
     { text: '*bobs headphones to a silent beat*', animation: 'confident' },
     { text: '*fist-bumps the air silently*', animation: 'excited' },
-    { text: '*sticks out tongue cheekily*', animation: 'confident' },
+    { text: '*flashes a confident smirk with a wink*', animation: 'confident' },
     { text: '*nods approvingly while his golden crown sparkles*', animation: 'happy' },
   ],
   negative: [

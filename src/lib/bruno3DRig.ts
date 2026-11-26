@@ -102,8 +102,8 @@ export function createBruno3DRig(): Bruno3DRig {
   });
   const catchlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const mouthCavityMat = new THREE.MeshStandardMaterial({
-    color: 0x2c0710,
-    roughness: 0.82,
+    color: 0x140e18,
+    roughness: 0.92,
   });
   const tongueMat = new THREE.MeshStandardMaterial({
     color: 0xe34848,
@@ -279,26 +279,45 @@ export function createBruno3DRig(): Bruno3DRig {
   const leftEye = buildEye(-1);
   const rightEye = buildEye(1);
 
-  // ─── Cheeky Open Smirk Mouth & Coral-Red Tongue ─────────────────────────────
+  // ─── Cheeky Clean Cartoon Smirk Mouth (No Red Tongue) ────────────────────────
   const mouthGroup = new THREE.Group();
   mouthGroup.position.set(0.02, -0.26, 0.74);
   mouthGroup.rotation.z = 0.08;
   headGroup.add(mouthGroup);
 
   const mouthHole = new THREE.Mesh(
-    new THREE.SphereGeometry(0.19, 20, 14),
+    new THREE.SphereGeometry(0.18, 24, 16),
     mouthCavityMat
   );
-  mouthHole.scale.set(1.25, 0.65, 0.36);
+  mouthHole.scale.set(1.22, 0.62, 0.32);
   mouthGroup.add(mouthHole);
 
+  // Crisp dark cartoon smirk contour outline (creates clean, defined cartoon smile)
+  const mouthRim = new THREE.Mesh(
+    new THREE.TorusGeometry(0.165, 0.02, 10, 28, Math.PI * 0.88),
+    linerMat
+  );
+  mouthRim.rotation.x = Math.PI;
+  mouthRim.rotation.z = -0.12;
+  mouthRim.position.set(-0.01, 0.02, 0.11);
+  mouthGroup.add(mouthRim);
+
+  // Subtle upturned smirk dimple / corner crease on right side
+  const smirkDimple = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.016, 0.045, 8, 12),
+    linerMat
+  );
+  smirkDimple.position.set(0.155, 0.035, 0.11);
+  smirkDimple.rotation.z = 0.55;
+  mouthGroup.add(smirkDimple);
+
+  // Invisible placeholder for tongue to maintain Bruno3DRig interface without rendering red object
   const tongueMesh = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.088, 0.13, 10, 16),
+    new THREE.BufferGeometry(),
     tongueMat
   );
-  tongueMesh.scale.set(1.08, 0.9, 0.58);
-  tongueMesh.position.set(0.06, -0.09, 0.075);
-  tongueMesh.rotation.set(0.65, 0.12, -0.26);
+  tongueMesh.visible = false;
+  tongueMesh.scale.set(0, 0, 0);
   mouthGroup.add(tongueMesh);
 
   // ─── Articulated Chubby Plush Arms (Left Hip Pose, Right Finger-Gun!) ─────
