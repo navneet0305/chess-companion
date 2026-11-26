@@ -3,16 +3,20 @@ import * as THREE from 'three';
 export interface Bruno3DRig {
   root: THREE.Group;
   torsoGroup: THREE.Group;
-  neckPivot: THREE.Group;
   headGroup: THREE.Group;
-  mustacheGroup: THREE.Group;
+  mouthGroup: THREE.Group;
   mouthHole: THREE.Mesh;
-  leftEye: { eyeGroup: THREE.Group; pupilGroup: THREE.Group };
-  rightEye: { eyeGroup: THREE.Group; pupilGroup: THREE.Group };
-  leftBrow: THREE.Mesh;
-  rightBrow: THREE.Mesh;
-  leftArm: { shoulder: THREE.Group; elbow: THREE.Group; hand: THREE.Mesh };
-  rightArm: { shoulder: THREE.Group; elbow: THREE.Group; hand: THREE.Mesh };
+  tongueMesh: THREE.Mesh;
+  leftEye: { eyeGroup: THREE.Group; pupilGroup: THREE.Group; eyelidGroup: THREE.Group };
+  rightEye: { eyeGroup: THREE.Group; pupilGroup: THREE.Group; eyelidGroup: THREE.Group };
+  leftEar: THREE.Mesh;
+  rightEar: THREE.Mesh;
+  headphonesGroup: THREE.Group;
+  floatingCrown: THREE.Group;
+  sparkGroup: THREE.Group;
+  starGroup: THREE.Group;
+  leftArm: { shoulder: THREE.Group; elbow: THREE.Group; hand: THREE.Group };
+  rightArm: { shoulder: THREE.Group; elbow: THREE.Group; hand: THREE.Group };
   leftLeg: { hip: THREE.Group; knee: THREE.Group; shoe: THREE.Group };
   rightLeg: { hip: THREE.Group; knee: THREE.Group; shoe: THREE.Group };
   shadesGroup: THREE.Group;
@@ -22,228 +26,400 @@ export interface Bruno3DRig {
 }
 
 /**
- * Builds an articulated full-body 3D Bruno character wearing a tailored navy blazer,
- * burgundy turtleneck, silk pocket square, gold buttons, leather belt, dress pants, and shoes.
+ * Helper to extrude a crisp 3-pointed crown emblem (used on headphone earcups & sneakers).
+ */
+function createCrownDecalMesh(colorHex: number, scale: number): THREE.Mesh {
+  const s = new THREE.Shape();
+  s.moveTo(-0.38, -0.22);
+  s.lineTo(-0.46, 0.2);
+  s.lineTo(-0.18, 0.0);
+  s.lineTo(0, 0.34);
+  s.lineTo(0.18, 0.0);
+  s.lineTo(0.46, 0.2);
+  s.lineTo(0.38, -0.22);
+  s.closePath();
+
+  const geo = new THREE.ExtrudeGeometry(s, {
+    depth: 0.06,
+    bevelEnabled: false,
+  });
+  geo.center();
+  const mat = new THREE.MeshStandardMaterial({
+    color: colorHex,
+    roughness: 0.3,
+    metalness: 0.05,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.scale.setScalar(scale);
+  return mesh;
+}
+
+/**
+ * Builds the 3D crowned purple-headphones vinyl bean companion with twin top tufts,
+ * half-lidded cartoon eyes, cheeky red tongue, finger-gun hand, chunky purple/cream
+ * crown sneakers, and floating golden crown & spark accents.
  */
 export function createBruno3DRig(): Bruno3DRig {
-  const skinMat = new THREE.MeshStandardMaterial({
-    color: 0xd99968,
-    roughness: 0.48,
-    metalness: 0.04,
-  });
-  const cheekMat = new THREE.MeshStandardMaterial({
-    color: 0xd47664,
+  const creamMat = new THREE.MeshStandardMaterial({
+    color: 0xf4e8d8,
     roughness: 0.65,
-    transparent: true,
-    opacity: 0.45,
+    metalness: 0.02,
   });
-  const sweaterMat = new THREE.MeshStandardMaterial({
-    color: 0x7f1d1d, // Burgundy turtleneck
-    roughness: 0.78,
+  const creamLidMat = new THREE.MeshStandardMaterial({
+    color: 0xebd7c2,
+    roughness: 0.68,
+    metalness: 0.02,
+  });
+  const purpleMat = new THREE.MeshStandardMaterial({
+    color: 0x673ab7,
+    roughness: 0.52,
+    metalness: 0.06,
+  });
+  const purpleDarkMat = new THREE.MeshStandardMaterial({
+    color: 0x45228a,
+    roughness: 0.65,
     metalness: 0.05,
   });
-  const collarMat = new THREE.MeshStandardMaterial({
-    color: 0x6b1414,
+  const cushionMat = new THREE.MeshStandardMaterial({
+    color: 0x582ca8,
+    roughness: 0.8,
+  });
+  const whiteTrimMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.22,
+  });
+  const eyeWhiteMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.14,
+  });
+  const pupilMat = new THREE.MeshStandardMaterial({
+    color: 0x0b0b0f,
+    roughness: 0.08,
+  });
+  const linerMat = new THREE.MeshStandardMaterial({
+    color: 0x1c1412,
+    roughness: 0.35,
+  });
+  const catchlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const mouthCavityMat = new THREE.MeshStandardMaterial({
+    color: 0x2c0710,
     roughness: 0.82,
   });
-  const jacketMat = new THREE.MeshStandardMaterial({
-    color: 0x1e293b, // Tailored charcoal-navy blazer
-    roughness: 0.65,
-    metalness: 0.08,
-  });
-  const lapelMat = new THREE.MeshStandardMaterial({
-    color: 0x0f172a,
-    roughness: 0.55,
-    metalness: 0.12,
-  });
-  const pantsMat = new THREE.MeshStandardMaterial({
-    color: 0x18181b, // Tailored dress trousers
-    roughness: 0.72,
-    metalness: 0.05,
-  });
-  const beltMat = new THREE.MeshStandardMaterial({
-    color: 0x451a03, // Dark leather belt
-    roughness: 0.4,
-    metalness: 0.15,
-  });
-  const shoeMat = new THREE.MeshStandardMaterial({
-    color: 0x271307, // Polished leather dress shoes
-    roughness: 0.28,
-    metalness: 0.2,
-  });
-  const cuffMat = new THREE.MeshStandardMaterial({
-    color: 0xf8fafc,
-    roughness: 0.4,
+  const tongueMat = new THREE.MeshStandardMaterial({
+    color: 0xe34848,
+    roughness: 0.42,
   });
   const goldMat = new THREE.MeshStandardMaterial({
     color: 0xfbbf24,
-    metalness: 0.85,
-    roughness: 0.2,
+    emissive: 0xb45309,
+    emissiveIntensity: 0.35,
+    roughness: 0.35,
+    metalness: 0.25,
   });
-  const hairMat = new THREE.MeshStandardMaterial({
-    color: 0x18151c,
-    roughness: 0.62,
-    metalness: 0.08,
+  const starMat = new THREE.MeshStandardMaterial({
+    color: 0xd1d5db,
+    emissive: 0x4b5563,
+    emissiveIntensity: 0.25,
+    roughness: 0.4,
   });
-  const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.18 });
-  const irisMat = new THREE.MeshStandardMaterial({ color: 0x3b2314, roughness: 0.2 });
-  const pupilMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.1 });
-  const catchlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  const mouthCavityMat = new THREE.MeshStandardMaterial({ color: 0x3b0a14, roughness: 0.7 });
-  const teethMat = new THREE.MeshStandardMaterial({ color: 0xfefce8, roughness: 0.25 });
 
   const root = new THREE.Group();
 
-  // ─── Torso & Tailored Suit Jacket ───────────────────────────────────────────
+  // ─── Seamless Plush Bean Torso & Crown Dome ─────────────────────────────────
   const torsoGroup = new THREE.Group();
-  torsoGroup.position.set(0, -0.35, 0);
+  torsoGroup.position.set(0, -0.05, 0);
   root.add(torsoGroup);
 
-  // Inner burgundy turtleneck torso
-  const innerTorso = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.56, 0.62, 1.32, 24),
-    sweaterMat
-  );
-  torsoGroup.add(innerTorso);
+  // Plump lower belly
+  const lowerBelly = new THREE.Mesh(new THREE.SphereGeometry(0.92, 32, 26), creamMat);
+  lowerBelly.scale.set(1.04, 0.96, 0.88);
+  lowerBelly.position.set(0, -0.26, 0);
+  torsoGroup.add(lowerBelly);
 
-  // Outer open blazer shell (wraps back & sides, leaving turtleneck V visible in front)
-  const jacketBody = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.64, 0.7, 1.24, 24, 1, false, Math.PI * 0.22, Math.PI * 1.56),
-    jacketMat
+  // Smooth rounded waist-to-head core
+  const bodyCore = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.84, 0.92, 0.88, 32),
+    creamMat
   );
-  jacketBody.rotation.y = Math.PI; // Opening faces front (+Z)
-  jacketBody.position.set(0, -0.02, -0.01);
-  torsoGroup.add(jacketBody);
+  bodyCore.scale.set(1.04, 1, 0.88);
+  bodyCore.position.set(0, 0.14, 0);
+  torsoGroup.add(bodyCore);
 
-  // Left & Right Blazer Front Panels + Lapels
+  // Top head dome
+  const headDome = new THREE.Mesh(new THREE.SphereGeometry(0.87, 32, 26), creamMat);
+  headDome.scale.set(1.02, 0.98, 0.88);
+  headDome.position.set(0, 0.56, 0);
+  torsoGroup.add(headDome);
+
+  // ─── Head Features Group (eyes, eyelids, mouth/tongue, top tufts, headphones)
+  const headGroup = new THREE.Group();
+  headGroup.position.set(0, 0.42, 0);
+  torsoGroup.add(headGroup);
+
+  // Twin Plush Sprout Tufts on Crown
+  const buildTuft = (x: number, y: number, rotZ: number) => {
+    const tuft = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.26, 12, 18), creamMat);
+    tuft.position.set(x, y, 0.04);
+    tuft.rotation.z = rotZ;
+    tuft.rotation.x = 0.08;
+    headGroup.add(tuft);
+    return tuft;
+  };
+  const leftEar = buildTuft(-0.18, 0.98, 0.44);
+  const rightEar = buildTuft(0.12, 1.0, -0.3);
+
+  // ─── Purple Over-Ear Headphones with White Crown Decals ─────────────────────
+  const headphonesGroup = new THREE.Group();
+  headGroup.add(headphonesGroup);
+
+  const headband = new THREE.Mesh(
+    new THREE.TorusGeometry(0.92, 0.115, 16, 36, Math.PI * 1.06),
+    purpleMat
+  );
+  headband.position.set(0, 0.08, -0.05);
+  headband.rotation.z = -Math.PI * 0.03;
+  headband.rotation.x = -0.1;
+  headphonesGroup.add(headband);
+
   [-1, 1].forEach((side) => {
-    const chestPanel = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.18, 0.22), jacketMat);
-    chestPanel.position.set(side * 0.36, -0.04, 0.38);
-    chestPanel.rotation.y = side * -0.25;
-    torsoGroup.add(chestPanel);
+    const cupGroup = new THREE.Group();
+    cupGroup.position.set(side * 0.91, 0.04, -0.02);
+    cupGroup.rotation.z = side * -0.08;
+    headphonesGroup.add(cupGroup);
 
-    // Tailored Lapel
-    const lapel = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.72, 0.08), lapelMat);
-    lapel.position.set(side * 0.24, 0.22, 0.51);
-    lapel.rotation.z = side * -0.22;
-    lapel.rotation.y = side * -0.2;
-    torsoGroup.add(lapel);
+    // Puffy inner ear pad
+    const cushion = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.35, 0.35, 0.16, 24),
+      cushionMat
+    );
+    cushion.rotation.z = Math.PI / 2;
+    cushion.position.x = -side * 0.06;
+    cupGroup.add(cushion);
+
+    // Thick purple outer shell + cap
+    const cupBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.32, 0.36, 0.24, 24),
+      purpleMat
+    );
+    cupBody.rotation.z = Math.PI / 2;
+    cupBody.position.x = side * 0.08;
+    cupGroup.add(cupBody);
+
+    const cupCap = new THREE.Mesh(
+      new THREE.SphereGeometry(0.32, 22, 18),
+      purpleDarkMat
+    );
+    cupCap.scale.set(0.38, 1, 1);
+    cupCap.position.x = side * 0.19;
+    cupGroup.add(cupCap);
+
+    // Crisp White 3-Point Crown Decal on Outer Earcup
+    const crownLogo = createCrownDecalMesh(0xffffff, 0.27);
+    crownLogo.position.set(side * 0.31, 0, 0);
+    crownLogo.rotation.y = side * (Math.PI / 2);
+    cupGroup.add(crownLogo);
   });
 
-  // Two Golden Jacket Buttons
-  [-0.18, -0.42].forEach((by) => {
-    const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.03, 12), goldMat);
-    btn.rotation.x = Math.PI / 2;
-    btn.position.set(0.14, by, 0.56);
-    torsoGroup.add(btn);
-  });
+  // ─── Large Expressive Cartoon Eyes with Cool Diagonal Half-Lids ─────────────
+  function buildEye(side: -1 | 1) {
+    const eyeGroup = new THREE.Group();
+    eyeGroup.position.set(side * 0.21, 0.09, 0.72);
+    headGroup.add(eyeGroup);
 
-  // Silk Gold Pocket Square on left breast pocket
-  const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.05, 0.04), lapelMat);
-  pocket.position.set(0.36, 0.24, 0.5);
-  pocket.rotation.y = -0.25;
-  torsoGroup.add(pocket);
+    // Big glossy sclera oval
+    const sclera = new THREE.Mesh(new THREE.SphereGeometry(0.245, 24, 20), eyeWhiteMat);
+    sclera.scale.set(1.0, 1.15, 0.48);
+    eyeGroup.add(sclera);
 
-  const pocketSquare = new THREE.Mesh(new THREE.ConeGeometry(0.085, 0.14, 4), goldMat);
-  pocketSquare.position.set(0.36, 0.31, 0.5);
-  pocketSquare.rotation.z = -0.15;
-  torsoGroup.add(pocketSquare);
+    // Thin dark eye outline ring
+    const outline = new THREE.Mesh(new THREE.TorusGeometry(0.245, 0.013, 8, 30), linerMat);
+    outline.scale.set(1.0, 1.15, 0.48);
+    outline.position.z = 0.04;
+    eyeGroup.add(outline);
 
-  // Shoulder broadening
-  const chestRound = new THREE.Mesh(new THREE.SphereGeometry(0.68, 24, 18), jacketMat);
-  chestRound.scale.set(1.12, 0.62, 0.72);
-  chestRound.position.set(0, 0.38, -0.02);
-  torsoGroup.add(chestRound);
+    // Pupil + catchlight
+    const pupilGroup = new THREE.Group();
+    pupilGroup.position.set(side === -1 ? 0.03 : -0.02, -0.02, 0.095);
+    eyeGroup.add(pupilGroup);
 
-  // Ribbed Turtleneck Collar
-  const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.42, 0.44, 24), collarMat);
-  collar.position.set(0, 0.78, 0.02);
-  torsoGroup.add(collar);
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.105, 16, 16), pupilMat);
+    pupil.scale.set(1, 1.05, 0.45);
+    pupilGroup.add(pupil);
 
-  const collarRim = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.07, 14, 28), sweaterMat);
-  collarRim.rotation.x = Math.PI / 2;
-  collarRim.position.set(0, 0.96, 0.02);
-  torsoGroup.add(collarRim);
+    const glint = new THREE.Mesh(new THREE.SphereGeometry(0.028, 10, 10), catchlightMat);
+    glint.position.set(0.036, 0.04, 0.045);
+    pupilGroup.add(glint);
 
-  // Waist, Belt & Golden Buckle
-  const waistBand = new THREE.Mesh(new THREE.CylinderGeometry(0.66, 0.68, 0.16, 24), beltMat);
-  waistBand.position.set(0, -0.66, 0);
-  torsoGroup.add(waistBand);
+    // Signature Heavy Cream Half-Eyelid Cap + Dark Eyeliner Rim
+    const eyelidGroup = new THREE.Group();
+    // Tilt diagonally inward for that iconic cheeky side-eye smirk!
+    eyelidGroup.rotation.z = side === -1 ? -0.2 : 0.18;
+    eyeGroup.add(eyelidGroup);
 
-  const beltBuckle = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.15, 0.08), goldMat);
-  beltBuckle.position.set(0, -0.66, 0.66);
-  torsoGroup.add(beltBuckle);
+    const lidCap = new THREE.Mesh(
+      new THREE.SphereGeometry(0.256, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.52),
+      creamLidMat
+    );
+    lidCap.scale.set(1.02, 1.16, 0.52);
+    lidCap.position.z = 0.005;
+    eyelidGroup.add(lidCap);
 
-  // ─── Articulated Arms (Blazer Sleeves + Shirt Cuffs + Hands) ────────────────
-  function buildArm(side: 1 | -1) {
+    // Crisp diagonal crease bar across front of eyelid
+    const lidLine = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.017, 0.48, 6, 10),
+      linerMat
+    );
+    lidLine.rotation.z = Math.PI / 2;
+    lidLine.position.set(0, -0.01, 0.13);
+    eyelidGroup.add(lidLine);
+
+    return { eyeGroup, pupilGroup, eyelidGroup };
+  }
+
+  const leftEye = buildEye(-1);
+  const rightEye = buildEye(1);
+
+  // ─── Cheeky Open Smirk Mouth & Coral-Red Tongue ─────────────────────────────
+  const mouthGroup = new THREE.Group();
+  mouthGroup.position.set(0.02, -0.26, 0.74);
+  mouthGroup.rotation.z = 0.08;
+  headGroup.add(mouthGroup);
+
+  const mouthHole = new THREE.Mesh(
+    new THREE.SphereGeometry(0.19, 20, 14),
+    mouthCavityMat
+  );
+  mouthHole.scale.set(1.25, 0.65, 0.36);
+  mouthGroup.add(mouthHole);
+
+  const tongueMesh = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.088, 0.13, 10, 16),
+    tongueMat
+  );
+  tongueMesh.scale.set(1.08, 0.9, 0.58);
+  tongueMesh.position.set(0.06, -0.09, 0.075);
+  tongueMesh.rotation.set(0.65, 0.12, -0.26);
+  mouthGroup.add(tongueMesh);
+
+  // ─── Articulated Chubby Plush Arms (Left Hip Pose, Right Finger-Gun!) ─────
+  function buildArm(side: -1 | 1, fingerGun: boolean) {
     const shoulder = new THREE.Group();
-    shoulder.position.set(side * 0.76, 0.42, 0);
+    shoulder.position.set(side * 0.86, -0.14, 0.04);
     torsoGroup.add(shoulder);
 
-    const shoulderCap = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 16), jacketMat);
-    shoulder.add(shoulderCap);
-
-    const upperArm = new THREE.Mesh(new THREE.CapsuleGeometry(0.155, 0.44, 8, 14), jacketMat);
-    upperArm.position.set(0, -0.28, 0);
-    shoulder.add(upperArm);
+    const upper = new THREE.Mesh(new THREE.CapsuleGeometry(0.19, 0.26, 10, 16), creamMat);
+    upper.position.set(0, -0.14, 0);
+    shoulder.add(upper);
 
     const elbow = new THREE.Group();
-    elbow.position.set(0, -0.56, 0);
+    elbow.position.set(0, -0.32, 0);
     shoulder.add(elbow);
 
-    const forearm = new THREE.Mesh(new THREE.CapsuleGeometry(0.135, 0.4, 8, 14), jacketMat);
-    forearm.position.set(0, -0.22, 0);
+    const forearm = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.22, 10, 16), creamMat);
+    forearm.position.set(0, -0.12, 0);
     elbow.add(forearm);
 
-    const shirtCuff = new THREE.Mesh(new THREE.CylinderGeometry(0.125, 0.125, 0.09, 14), cuffMat);
-    shirtCuff.position.set(0, -0.45, 0);
-    elbow.add(shirtCuff);
-
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.155, 16, 16), skinMat);
-    hand.scale.set(0.95, 1.1, 0.85);
-    hand.position.set(0, -0.56, 0.04);
+    const hand = new THREE.Group();
+    hand.position.set(0, -0.28, 0.03);
     elbow.add(hand);
 
-    const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(0.048, 0.1, 6, 8), skinMat);
-    thumb.position.set(-side * 0.12, -0.52, 0.09);
-    thumb.rotation.z = side * 0.6;
-    elbow.add(thumb);
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), creamMat);
+    hand.add(palm);
+
+    if (fingerGun) {
+      // Extended pointing index finger + upright thumb (signature pose!)
+      const pointer = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.072, 0.24, 8, 12),
+        creamMat
+      );
+      pointer.rotation.z = -Math.PI / 2;
+      pointer.position.set(0.22, 0.02, 0.02);
+      hand.add(pointer);
+
+      const thumb = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.065, 0.16, 8, 12),
+        creamMat
+      );
+      thumb.rotation.z = -0.32;
+      thumb.position.set(0.06, 0.19, 0.03);
+      hand.add(thumb);
+    }
 
     return { shoulder, elbow, hand };
   }
 
-  const leftArm = buildArm(-1);
-  const rightArm = buildArm(1);
+  // Note: side -1 is viewer's left (on hip), side +1 is viewer's right (finger-gun!)
+  const leftArm = buildArm(-1, false);
+  const rightArm = buildArm(1, true);
 
-  // ─── Articulated Legs, Trousers & Dress Shoes ───────────────────────────────
+  // ─── Articulated Short Legs & Chunky Purple/Cream Crown Sneakers ────────────
   function buildLeg(side: -1 | 1) {
     const hip = new THREE.Group();
-    hip.position.set(side * 0.28, -0.74, 0);
+    hip.position.set(side * 0.42, -0.92, 0);
     torsoGroup.add(hip);
 
-    const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.46, 8, 14), pantsMat);
-    thigh.position.set(0, -0.28, 0);
-    hip.add(thigh);
+    const legStump = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.22, 0.22, 10, 16),
+      creamMat
+    );
+    legStump.position.set(0, -0.14, 0);
+    hip.add(legStump);
 
     const knee = new THREE.Group();
-    knee.position.set(0, -0.58, 0);
+    knee.position.set(0, -0.28, 0);
     hip.add(knee);
 
-    const shin = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.46, 8, 14), pantsMat);
-    shin.position.set(0, -0.26, 0);
-    knee.add(shin);
-
     const shoe = new THREE.Group();
-    shoe.position.set(0, -0.56, 0.08);
+    shoe.position.set(side * 0.04, -0.24, 0.09);
+    shoe.rotation.y = side * 0.2;
     knee.add(shoe);
 
-    const shoeBase = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.16, 0.48), shoeMat);
-    shoe.add(shoeBase);
+    // Chunky cream sneaker rubber sole
+    const sole = new THREE.Mesh(
+      new THREE.BoxGeometry(0.46, 0.14, 0.72),
+      creamMat
+    );
+    sole.position.set(0, -0.08, 0.08);
+    shoe.add(sole);
 
-    const shoeToe = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 12), shoeMat);
-    shoeToe.scale.set(1.0, 0.6, 1.15);
-    shoeToe.position.set(0, -0.01, 0.22);
-    shoe.add(shoeToe);
+    const soleToe = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.23, 0.24, 0.14, 18),
+      creamMat
+    );
+    soleToe.position.set(0, -0.08, 0.36);
+    shoe.add(soleToe);
+
+    // Vibrant purple sneaker upper
+    const upper = new THREE.Mesh(
+      new THREE.BoxGeometry(0.42, 0.26, 0.56),
+      purpleMat
+    );
+    upper.position.set(0, 0.08, 0.02);
+    shoe.add(upper);
+
+    // Rounded cream/white front toe box
+    const toeCap = new THREE.Mesh(
+      new THREE.SphereGeometry(0.23, 18, 14),
+      creamMat
+    );
+    toeCap.scale.set(0.95, 0.68, 1.05);
+    toeCap.position.set(0, 0.05, 0.34);
+    shoe.add(toeCap);
+
+    // Puffy purple sneaker tongue + collar
+    const tongue = new THREE.Mesh(
+      new THREE.BoxGeometry(0.28, 0.24, 0.16),
+      purpleDarkMat
+    );
+    tongue.position.set(0, 0.22, 0.14);
+    tongue.rotation.x = 0.28;
+    shoe.add(tongue);
+
+    // White crown crest on outside of each sneaker
+    const shoeCrown = createCrownDecalMesh(0xffffff, 0.16);
+    shoeCrown.position.set(side * 0.23, 0.08, 0.05);
+    shoeCrown.rotation.y = side * (Math.PI / 2);
+    shoe.add(shoeCrown);
 
     return { hip, knee, shoe };
   }
@@ -251,189 +427,146 @@ export function createBruno3DRig(): Bruno3DRig {
   const leftLeg = buildLeg(-1);
   const rightLeg = buildLeg(1);
 
-  // Mount point in front of chest/hands when carrying a captured chess piece
+  // Mount point when carrying chess pieces during Unlimited 3D board walking
   const carryMount = new THREE.Group();
-  carryMount.position.set(0, 0.05, 0.92);
+  carryMount.position.set(0, -0.1, 1.05);
   torsoGroup.add(carryMount);
 
-  // ─── Head & Expressive Face ─────────────────────────────────────────────────
-  const neckPivot = new THREE.Group();
-  neckPivot.position.set(0, 0.98, 0);
-  torsoGroup.add(neckPivot);
+  // ─── Floating Golden 3D Crown Outline + Spark Dashes + Star Accent ─────────
+  const floatingCrown = new THREE.Group();
+  floatingCrown.position.set(-0.82, 1.24, 0.05);
+  floatingCrown.rotation.z = 0.38;
+  headGroup.add(floatingCrown);
 
-  const headGroup = new THREE.Group();
-  headGroup.position.set(0, 0.56, 0);
-  neckPivot.add(headGroup);
-
-  const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.7, 32, 28), skinMat);
-  headMesh.scale.set(0.94, 1.08, 0.96);
-  headGroup.add(headMesh);
-
-  [-1, 1].forEach((side) => {
-    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 14), skinMat);
-    ear.scale.set(0.55, 0.95, 0.7);
-    ear.position.set(side * 0.64, -0.02, -0.04);
-    headGroup.add(ear);
-
-    const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 14), cheekMat);
-    cheek.scale.set(1.1, 0.7, 0.4);
-    cheek.position.set(side * 0.35, -0.14, 0.53);
-    headGroup.add(cheek);
-  });
-
-  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.125, 16, 16), skinMat);
-  nose.scale.set(0.9, 1.15, 1.25);
-  nose.position.set(0, -0.04, 0.69);
-  headGroup.add(nose);
-
-  function buildEye(side: -1 | 1) {
-    const eyeGroup = new THREE.Group();
-    eyeGroup.position.set(side * 0.24, 0.12, 0.58);
-    headGroup.add(eyeGroup);
-
-    const sclera = new THREE.Mesh(new THREE.SphereGeometry(0.14, 20, 18), eyeWhiteMat);
-    sclera.scale.set(1, 1.12, 0.65);
-    eyeGroup.add(sclera);
-
-    const pupilGroup = new THREE.Group();
-    pupilGroup.position.set(0, 0, 0.065);
-    eyeGroup.add(pupilGroup);
-
-    const iris = new THREE.Mesh(new THREE.SphereGeometry(0.072, 16, 16), irisMat);
-    iris.scale.set(1, 1, 0.5);
-    pupilGroup.add(iris);
-
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.043, 12, 12), pupilMat);
-    pupil.position.set(0, 0, 0.02);
-    pupil.scale.set(1, 1, 0.5);
-    pupilGroup.add(pupil);
-
-    const shine = new THREE.Mesh(new THREE.SphereGeometry(0.021, 8, 8), catchlightMat);
-    shine.position.set(0.024, 0.028, 0.036);
-    pupilGroup.add(shine);
-
-    return { eyeGroup, pupilGroup };
+  const crownPts = [
+    new THREE.Vector3(-0.28, -0.16, 0),
+    new THREE.Vector3(-0.34, 0.18, 0),
+    new THREE.Vector3(-0.14, 0.02, 0),
+    new THREE.Vector3(0, 0.28, 0),
+    new THREE.Vector3(0.14, 0.02, 0),
+    new THREE.Vector3(0.34, 0.18, 0),
+    new THREE.Vector3(0.28, -0.16, 0),
+    new THREE.Vector3(-0.28, -0.16, 0),
+  ];
+  for (let i = 0; i < crownPts.length - 1; i++) {
+    const p1 = crownPts[i];
+    const p2 = crownPts[i + 1];
+    const curve = new THREE.LineCurve3(p1, p2);
+    const bar = new THREE.Mesh(
+      new THREE.TubeGeometry(curve, 6, 0.036, 8, false),
+      goldMat
+    );
+    floatingCrown.add(bar);
   }
 
-  const leftEye = buildEye(-1);
-  const rightEye = buildEye(1);
+  // Two golden-amber vibe/beat dashes on top-right
+  const sparkGroup = new THREE.Group();
+  sparkGroup.position.set(0.95, 0.94, 0.06);
+  headGroup.add(sparkGroup);
 
-  const leftBrow = new THREE.Mesh(new THREE.CapsuleGeometry(0.045, 0.21, 6, 10), hairMat);
-  leftBrow.rotation.z = Math.PI / 2 - 0.1;
-  leftBrow.position.set(-0.25, 0.31, 0.6);
-  headGroup.add(leftBrow);
+  const dash1 = new THREE.Mesh(new THREE.CapsuleGeometry(0.04, 0.22, 6, 10), goldMat);
+  dash1.rotation.z = -0.38;
+  dash1.position.set(-0.08, 0.08, 0);
+  sparkGroup.add(dash1);
 
-  const rightBrow = new THREE.Mesh(new THREE.CapsuleGeometry(0.045, 0.21, 6, 10), hairMat);
-  rightBrow.rotation.z = Math.PI / 2 + 0.1;
-  rightBrow.position.set(0.25, 0.31, 0.6);
-  headGroup.add(rightBrow);
+  const dash2 = new THREE.Mesh(new THREE.CapsuleGeometry(0.038, 0.19, 6, 10), goldMat);
+  dash2.rotation.z = -0.82;
+  dash2.position.set(0.12, -0.06, 0);
+  sparkGroup.add(dash2);
 
-  const mouthGroup = new THREE.Group();
-  mouthGroup.position.set(0, -0.34, 0.6);
-  headGroup.add(mouthGroup);
+  // Small outlined star doodle on the left
+  const starGroup = new THREE.Group();
+  starGroup.position.set(-1.32, -0.18, 0);
+  torsoGroup.add(starGroup);
 
-  const mouthHole = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 14), mouthCavityMat);
-  mouthHole.scale.set(1.25, 0.22, 0.5);
-  mouthGroup.add(mouthHole);
+  const starPts: THREE.Vector3[] = [];
+  for (let i = 0; i <= 10; i++) {
+    const angle = (i * Math.PI) / 5 + Math.PI / 2;
+    const r = i % 2 === 0 ? 0.16 : 0.068;
+    starPts.push(new THREE.Vector3(Math.cos(angle) * r, Math.sin(angle) * r, 0));
+  }
+  for (let i = 0; i < starPts.length - 1; i++) {
+    const seg = new THREE.LineCurve3(starPts[i], starPts[i + 1]);
+    starGroup.add(
+      new THREE.Mesh(new THREE.TubeGeometry(seg, 4, 0.015, 6, false), starMat)
+    );
+  }
 
-  const teeth = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 0.06), teethMat);
-  teeth.position.set(0, 0.035, 0.04);
-  mouthGroup.add(teeth);
-
-  // Detachable Handlebar Mustache
-  const mustacheGroup = new THREE.Group();
-  mustacheGroup.position.set(0, -0.18, 0.66);
-  headGroup.add(mustacheGroup);
-
-  const buildMustacheHalf = (side: -1 | 1) => {
-    const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0, 0.01, 0.03),
-      new THREE.Vector3(side * 0.14, -0.02, 0.04),
-      new THREE.Vector3(side * 0.3, 0.01, -0.02),
-      new THREE.Vector3(side * 0.4, 0.12, -0.07),
-      new THREE.Vector3(side * 0.34, 0.17, -0.08),
-    ]);
-    return new THREE.Mesh(new THREE.TubeGeometry(curve, 22, 0.055, 10, false), hairMat);
-  };
-  mustacheGroup.add(buildMustacheHalf(-1));
-  mustacheGroup.add(buildMustacheHalf(1));
-
-  // Wavy 3D Hair
-  const hairGroup = new THREE.Group();
-  headGroup.add(hairGroup);
-
-  const hairBlobs: [number, number, number, number, number, number][] = [
-    [0, 0.55, -0.06, 0.67, 0.41, 0.65],
-    [-0.41, 0.45, -0.05, 0.35, 0.31, 0.41],
-    [0.41, 0.45, -0.05, 0.35, 0.31, 0.41],
-    [0, 0.38, -0.41, 0.6, 0.48, 0.38],
-    [-0.22, 0.64, 0.24, 0.33, 0.22, 0.31],
-    [0.18, 0.66, 0.27, 0.35, 0.23, 0.31],
-    [0.43, 0.22, -0.22, 0.27, 0.33, 0.27],
-    [-0.43, 0.22, -0.22, 0.27, 0.33, 0.27],
-  ];
-  hairBlobs.forEach(([x, y, z, sx, sy, sz]) => {
-    const puff = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 16), hairMat);
-    puff.position.set(x, y, z);
-    puff.scale.set(sx, sy, sz);
-    hairGroup.add(puff);
-  });
-
-  // ─── Props ──────────────────────────────────────────────────────────────────
+  // ─── Action Skit Props (Golden Sunglasses, Espresso Cup, Sweat Drop) ─────────
   const shadesGroup = new THREE.Group();
-  shadesGroup.position.set(0, 0.14, 0.71);
+  shadesGroup.position.set(0, 0.09, 0.9);
   shadesGroup.visible = false;
   headGroup.add(shadesGroup);
 
-  const lensMat = new THREE.MeshStandardMaterial({ color: 0x09090b, metalness: 0.4, roughness: 0.1 });
-  [-0.24, 0.24].forEach((lx) => {
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.31, 0.18, 0.05), goldMat);
+  const lensMat = new THREE.MeshStandardMaterial({
+    color: 0x09090b,
+    metalness: 0.4,
+    roughness: 0.1,
+  });
+  [-0.22, 0.22].forEach((lx) => {
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.21, 0.05), goldMat);
     frame.position.set(lx, 0, 0);
     shadesGroup.add(frame);
-    const lens = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.14, 0.06), lensMat);
+    const lens = new THREE.Mesh(new THREE.BoxGeometry(0.31, 0.16, 0.06), lensMat);
     lens.position.set(lx, 0, 0.005);
     shadesGroup.add(lens);
   });
-  const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.04, 0.04), goldMat);
+  const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 0.04), goldMat);
   bridge.position.set(0, 0.03, 0);
   shadesGroup.add(bridge);
 
   const espressoGroup = new THREE.Group();
-  espressoGroup.position.set(0, 0.14, 0.8);
+  espressoGroup.position.set(0, 1.25, 0.15);
   espressoGroup.visible = false;
   headGroup.add(espressoGroup);
 
   const porcelainMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2 });
   const coffeeMat = new THREE.MeshStandardMaterial({ color: 0x3b1f0e, roughness: 0.15 });
-  const saucer = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.18, 0.04, 20), porcelainMat);
-  espressoGroup.add(saucer);
-  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.12, 0.22, 20), porcelainMat);
-  cup.position.set(0, 0.12, 0);
+  espressoGroup.add(
+    new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.17, 0.04, 20), porcelainMat)
+  );
+  const cup = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.15, 0.11, 0.2, 20),
+    porcelainMat
+  );
+  cup.position.y = 0.11;
   espressoGroup.add(cup);
-  const coffeeTop = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.02, 18), coffeeMat);
-  coffeeTop.position.set(0, 0.22, 0);
+  const coffeeTop = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.13, 0.13, 0.02, 18),
+    coffeeMat
+  );
+  coffeeTop.position.y = 0.2;
   espressoGroup.add(coffeeTop);
 
   const sweatDrop = new THREE.Mesh(
     new THREE.SphereGeometry(0.08, 12, 12),
-    new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.1, transparent: true, opacity: 0.85 })
+    new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      roughness: 0.1,
+      transparent: true,
+      opacity: 0.85,
+    })
   );
   sweatDrop.scale.set(0.75, 1.35, 0.75);
-  sweatDrop.position.set(0.55, 0.28, 0.42);
+  sweatDrop.position.set(0.62, 0.3, 0.5);
   sweatDrop.visible = false;
   headGroup.add(sweatDrop);
 
   return {
     root,
     torsoGroup,
-    neckPivot,
     headGroup,
-    mustacheGroup,
+    mouthGroup,
     mouthHole,
+    tongueMesh,
     leftEye,
     rightEye,
-    leftBrow,
-    rightBrow,
+    leftEar,
+    rightEar,
+    headphonesGroup,
+    floatingCrown,
+    sparkGroup,
+    starGroup,
     leftArm,
     rightArm,
     leftLeg,
@@ -446,7 +579,7 @@ export function createBruno3DRig(): Bruno3DRig {
 }
 
 /**
- * Builds a recognizable miniature 3D chess piece for Bruno to pick up and carry off the board.
+ * Builds a recognizable miniature 3D chess piece for the companion to pick up and carry off the board.
  */
 export function createMini3DChessPiece(type: string, color: 'w' | 'b'): THREE.Group {
   const g = new THREE.Group();
@@ -487,7 +620,6 @@ export function createMini3DChessPiece(type: string, color: 'w' | 'b'): THREE.Gr
     crown.position.y = topY + 0.1;
     g.add(crown);
   } else {
-    // Knight snout
     const snout = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.22, 0.28), mat);
     snout.position.set(0, topY + 0.08, 0.06);
     snout.rotation.x = 0.35;

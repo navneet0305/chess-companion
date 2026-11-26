@@ -9,6 +9,7 @@ import {
 export interface DialogueContext {
   character?: CharacterBase;
   moveSan?: string;
+  movedPiece?: string;
   capturedPieceName?: string;
   moveNumber?: number;
   isPlayerMove?: boolean;
@@ -16,6 +17,13 @@ export interface DialogueContext {
   playerColor?: 'w' | 'b';
   bestMove?: string | null;
   isCheck?: boolean;
+}
+
+// Track which signature story script lines already played in the current match
+const usedScriptBeats = new Set<string>();
+
+export function clearScriptBeatMemory() {
+  usedScriptBeats.clear();
 }
 
 // Session-wide anti-repetition memory
@@ -59,58 +67,58 @@ const CHARACTER_BONUS_LINES: Partial<
 > = {
   bruno: {
     start: [
-      { text: "Ah, another masterpiece in the making! What opening are we cooking up today?", animation: 'confident' },
-      { text: "Alright partner, it's you and me against the machine. Ready when you are!", animation: 'excited' },
-      { text: "Let's paint some chaos across these 64 squares — don't leave me hanging on move four!", animation: 'happy' },
+      { text: "Headphones on, crown floating — let's wreck this board! What opening are we cooking?", animation: 'confident' },
+      { text: "Alright partner, it's you, me, and the purple kicks against Stockfish. Ready?", animation: 'excited' },
+      { text: "Beats queued up, smirk locked in — don't leave me hanging on move four!", animation: 'happy' },
     ],
     brilliant: [
-      { text: "BRAVO! Wait, did you actually calculate that, or are we just vibing at Grandmaster level?!", animation: 'celebrating' },
-      { text: "Mamma mia! Even I dropped my monocle watching that brilliance! Keep going!", animation: 'shocked' },
+      { text: "YO!! Wait, did you actually calculate that or are we just flexing with the crown on?!", animation: 'celebrating' },
+      { text: "Clean! Even my purple headphones just shook from that brilliance! Keep going!", animation: 'shocked' },
     ],
     good_move: [
-      { text: "Ooh, now that actually had a plan behind it! What are we targeting next?", animation: 'happy' },
-      { text: "Look at us looking respectable! Keep tightening the screws on them.", animation: 'confident' },
-      { text: "Not bad at all — my mustache approves of that square.", animation: 'happy' },
+      { text: "Ooh, now that actually had swagger behind it! What are we targeting next?", animation: 'happy' },
+      { text: "Look at us cruising! Keep tightening the pressure on their squares.", animation: 'confident' },
+      { text: "Not bad at all — solid move, zero panic.", animation: 'happy' },
     ],
     capture: [
-      { text: "Yoink! Clean snag — are we hunting their King next or picking off more pawns?", animation: 'happy' },
-      { text: "That's one less defender in our way. Feel the momentum shifting?", animation: 'confident' },
+      { text: "Yoink! Clean snag — are we hunting their King next or stacking more material?", animation: 'happy' },
+      { text: "That's one less defender in our way. Feel the beat dropping in our favor?", animation: 'confident' },
     ],
     check: [
-      { text: "CHECK! Look at their King scrambling — think we can keep the attack rolling?", animation: 'excited' },
+      { text: "CHECK! Look at their King scrambling — think we can keep the combo rolling?", animation: 'excited' },
     ],
     castling: [
-      { text: "King tucked in safe and cozy! Now let's wake those rooks up, yeah?", animation: 'confident' },
+      { text: "King tucked in nice and safe! Time to wake those rooks up, yeah?", animation: 'confident' },
     ],
     opponent_blunder: [
-      { text: "Wait a second — did Stockfish just gift us that?! Tell me you see the punishment!", animation: 'excited' },
+      { text: "Wait a second — did Stockfish just hand us a freebie?! Tell me you see it!", animation: 'excited' },
     ],
     hanging_piece: [
-      { text: "Psst — quick sanity check, is that piece defended or are we donating to charity?", animation: 'nervous' },
+      { text: "Psst — quick check, is that piece defended or are we donating to charity?", animation: 'nervous' },
     ],
     missed_opportunity: [
       { text: "Oof, we had a real knockout punch right there! Catch it next turn, okay?", animation: 'facepalm' },
     ],
     idle_thinking: [
-      { text: "So what's the grand plan here? Don't tell me you're improvising again...", animation: 'thinking' },
-      { text: "I'm listening — you thinking deep tactics or staring at their knight like me?", animation: 'idle' },
-      { text: "Take your time, partner. Good moves beat fast blunders every day of the week!", animation: 'confident' },
+      { text: "So what's the grand plan here? Don't tell me you're vibing without calculating...", animation: 'thinking' },
+      { text: "I'm listening — deep tactics in the works or just admiring the purple sneakers?", animation: 'idle' },
+      { text: "Take your time, partner. Smooth moves beat fast blunders every day!", animation: 'confident' },
     ],
     blunder: [
-      { text: "OH THE HORROR! My mustache is curling in pure tragedy! How do we wiggle out of this?", animation: 'facepalm' },
-      { text: "Excuse me, was that a tactical gamble or did your finger slip?! Be honest with me!", animation: 'shocked' },
+      { text: "YIKES! Even my floating crown tilted sideways on that one! How do we recover?", animation: 'facepalm' },
+      { text: "Hold up, was that a spicy gambit or did your finger slip?! Be honest with me!", animation: 'shocked' },
     ],
     capture_queen: [
-      { text: "THE QUEEN HAS LEFT THE OPERA! Tell me you're feeling unstoppable right now!", animation: 'celebrating' },
+      { text: "THE QUEEN IS GONE! Tell me you're feeling unstoppable right now!", animation: 'celebrating' },
     ],
     lost_queen: [
-      { text: "NOT THE QUEEN! Okay, deep breaths — we can still swindle a draw or miracle!", animation: 'facepalm' },
+      { text: "NOT THE QUEEN! Okay, stay cool — we've still got chaos mode left!", animation: 'facepalm' },
     ],
     interaction_click: [
-      { text: "Yes, yes, admire the mustache — now tell me your next idea before Stockfish eats us!", animation: 'confident' },
-      { text: "I'm not saying we're in trouble, I'm just saying my turtleneck is sweating.", animation: 'nervous' },
-      { text: "Between us, confidence is 90% posture and 10% not hanging your Rook!", animation: 'happy' },
-      { text: "Hey! Careful poking the maestro — we've got a game to win here!", animation: 'shocked' },
+      { text: "Hey! Don't poke the ears — check the board before Stockfish sneaks up on us!", animation: 'confident' },
+      { text: "Wait, you tapping for hype or hiding a sneaky sacrifice?", animation: 'happy' },
+      { text: "Crown's floating, music's bumping — let's find the sharpest move on the board!", animation: 'excited' },
+      { text: "Careful poking me — you might knock my headphones crooked!", animation: 'shocked' },
     ],
   },
   luffy: {
@@ -274,15 +282,133 @@ function buildDynamicMoveLines(
   return lines;
 }
 
+function tryPickBrunoScriptBeat(
+  event: ChessEvent,
+  ctx?: DialogueContext
+): DialogueEntry | null {
+  const char = ctx?.character || 'bruno';
+  if (char !== 'bruno' && char !== 'mateo' && char !== 'oscar') return null;
+
+  const claim = (key: string, entry: DialogueEntry): DialogueEntry | null => {
+    if (usedScriptBeats.has(key)) return null;
+    usedScriptBeats.add(key);
+    return entry;
+  };
+
+  if (event === 'start') {
+    return claim('start', {
+      text: 'Ah yes. Chess. A game of intelligence, patience, and apparently moving pieces wherever you feel like it.',
+      animation: 'confident',
+    });
+  }
+
+  if (event === 'victory') {
+    return claim('victory', {
+      text: "AND THAT'S CHECKMATE! Beautiful. Absolutely calculated. Ignore the previous 37 questionable decisions.",
+      animation: 'victory',
+    });
+  }
+
+  if (event === 'defeat' || event === 'draw') {
+    return claim('game_end', {
+      text: "Chess is about learning from your mistakes. Which is good, because we made a lot of them. Run it back. I wasn't emotionally prepared for that one.",
+      animation: 'sad',
+    });
+  }
+
+  if (event === 'brilliant') {
+    return claim('brilliant', {
+      text: "NO WAY. YOU ACTUALLY FOUND IT?! Quick, don't think too much. You might undo it.",
+      animation: 'celebrating',
+    });
+  }
+
+  if (event === 'lost_queen' || ((event === 'blunder' || event === 'hanging_piece') && ctx?.movedPiece === 'q')) {
+    return claim('hang_queen', {
+      text: "Your queen is gone. She didn't resign. She just left. Honestly, understandable.",
+      animation: 'facepalm',
+    });
+  }
+
+  if (event === 'blunder' || event === 'lost_material') {
+    return claim('blunder', {
+      text: '... Well. That piece had a family.',
+      animation: 'shocked',
+    });
+  }
+
+  if (event === 'opponent_blunder') {
+    return claim('opponent_blunder', {
+      text: 'Oh, they messed up. They messed up so badly I almost feel responsible for noticing.',
+      animation: 'excited',
+    });
+  }
+
+  if (event === 'check' && ctx?.isPlayerMove === false) {
+    return claim('player_checked', {
+      text: 'CHECK! Your king is currently experiencing a situation.',
+      animation: 'nervous',
+    });
+  }
+
+  if (ctx?.isPlayerMove && ctx?.moveNumber === 1) {
+    return claim('first_move', {
+      text: 'Okayyy... a move has been made. Was it theory? Was it strategy? We may never know.',
+      animation: 'thinking',
+    });
+  }
+
+  if (ctx?.isPlayerMove === false && ['good_move', 'castling'].includes(event)) {
+    const oppDev = claim('opp_develop', {
+      text: "Oh, they're developing. Fancy word for moving a horse and hoping for the best.",
+      animation: 'idle',
+    });
+    if (oppDev) return oppDev;
+  }
+
+  const playerIsWhite = (ctx?.playerColor || 'w') === 'w';
+  const advCp = ctx?.evalScore !== undefined ? (playerIsWhite ? ctx.evalScore : -ctx.evalScore) : 0;
+
+  if (advCp >= 180) {
+    const winningLine = claim('winning', {
+      text: 'We are winning. I repeat, WE are winning. Please do not do anything creative.',
+      animation: 'excited',
+    });
+    if (winningLine) return winningLine;
+  }
+
+  if (advCp <= -180) {
+    const losingLine = claim('losing', {
+      text: 'So the plan is simple. We pretend this was a practice game.',
+      animation: 'nervous',
+    });
+    if (losingLine) return losingLine;
+  }
+
+  if (ctx?.isPlayerMove && event === 'good_move') {
+    return claim('good_move', {
+      text: 'WAIT. Hold on. That was actually good. Who gave you permission to think?',
+      animation: 'happy',
+    });
+  }
+
+  return null;
+}
+
 /**
- * Picks a fresh, non-repeating dialogue line combining personality,
- * character flavor, and live move context.
+ * Picks a fresh, non-repeating dialogue line combining scripted signature beats,
+ * personality pools, character flavor, and live move context.
  */
 export function getContextualDialogue(
   personality: Personality,
   event: ChessEvent,
   ctx?: DialogueContext
 ): DialogueEntry {
+  const scripted = tryPickBrunoScriptBeat(event, ctx);
+  if (scripted) {
+    return scripted;
+  }
+
   const basePool =
     COMPANION_DIALOGUES[personality]?.[event] ||
     COMPANION_DIALOGUES.roaster[event] ||
@@ -301,17 +427,24 @@ export function getContextualDialogue(
 
 /**
  * Balanced conversational cadence:
- * - Always speaks on start/end/direct interaction and major turning points
- * - Speaks conversationally on many captures, checks, and routine turns without talking over every single ply
+ * - Always speaks on start/end/direct interaction, opening beats, and major turning points
+ * - Speaks conversationally on captures, checks, and routine turns without talking over every single ply
  * - Mixes spoken banter with silent animated gestures so he feels natural and alive
  */
 export function shouldSpeakForEvent(
   event: ChessEvent,
-  msSinceLastSpoken: number
+  msSinceLastSpoken: number,
+  ctx?: DialogueContext
 ): boolean {
-  // Always speak on game start/end or direct user interaction
+  // Always speak on game start/end, opening move, opponent's first development, or user taps
   if (['start', 'victory', 'defeat', 'draw', 'interaction_click', 'idle_thinking'].includes(event)) {
-    return msSinceLastSpoken > 800;
+    return msSinceLastSpoken > 600;
+  }
+  if (ctx?.moveNumber === 1 && !usedScriptBeats.has('first_move')) {
+    return true;
+  }
+  if (ctx?.isPlayerMove === false && !usedScriptBeats.has('opp_develop') && ['good_move', 'castling'].includes(event)) {
+    return msSinceLastSpoken > 1500;
   }
 
   // High-priority turning points & tactical moments: speak reliably with brief cooldown
@@ -329,18 +462,18 @@ export function shouldSpeakForEvent(
       'missed_opportunity',
     ].includes(event)
   ) {
-    return msSinceLastSpoken > 3200;
+    return msSinceLastSpoken > 2500;
   }
 
   // Normal captures & castling: usually speaks conversationally (~75%) unless spoken very recently
   if (['capture', 'castling'].includes(event)) {
     if (msSinceLastSpoken > 9000) return true;
-    return msSinceLastSpoken > 4500 && Math.random() < 0.75;
+    return msSinceLastSpoken > 4200 && Math.random() < 0.75;
   }
 
   // Routine moves: speak about half the time once cooled down (and guarantee if quiet > 11s)
   if (msSinceLastSpoken > 11000) return true;
-  return msSinceLastSpoken > 5500 && Math.random() < 0.5;
+  return msSinceLastSpoken > 5000 && Math.random() < 0.55;
 }
 
 const SILENT_GESTURES: Record<
@@ -348,25 +481,25 @@ const SILENT_GESTURES: Record<
   { text: string; animation: AnimationState }[]
 > = {
   positive: [
-    { text: '*twirls mustache with a smug nod*', animation: 'happy' },
-    { text: '*gives a theatrical slow clap*', animation: 'confident' },
+    { text: '*hits a cool finger-gun point with a smug grin*', animation: 'happy' },
+    { text: '*bobs headphones to a silent beat*', animation: 'confident' },
     { text: '*fist-bumps the air silently*', animation: 'excited' },
-    { text: '*winks and adjusts turtleneck*', animation: 'confident' },
-    { text: '*nods approvingly with a dramatic grin*', animation: 'happy' },
+    { text: '*sticks out tongue cheekily*', animation: 'confident' },
+    { text: '*nods approvingly while his golden crown sparkles*', animation: 'happy' },
   ],
   negative: [
-    { text: '*gasps and clutches turtleneck in horror*', animation: 'facepalm' },
+    { text: '*drops jaw and covers eyes under headphones*', animation: 'facepalm' },
     { text: '*winces dramatically and shakes head*', animation: 'disappointed' },
-    { text: '*raises one eyebrow nervously*', animation: 'nervous' },
-    { text: '*covers eyes peeking through fingers*', animation: 'facepalm' },
+    { text: '*peeks half-lidded nervously at the board*', animation: 'nervous' },
+    { text: '*taps purple sneaker anxiously*', animation: 'facepalm' },
   ],
   thinking: [
-    { text: '*strokes mustache, squinting at the board*', animation: 'thinking' },
+    { text: '*tilts headphones and squints at the board*', animation: 'thinking' },
     { text: '*taps chin thoughtfully*', animation: 'idle' },
   ],
   alert: [
-    { text: '*leans forward with wide eyes!*', animation: 'shocked' },
-    { text: '*points dramatically at the enemy king!*', animation: 'excited' },
+    { text: '*opens eyes wide with crown spinning!*', animation: 'shocked' },
+    { text: '*points finger-gun right at the enemy king!*', animation: 'excited' },
   ],
 };
 
@@ -428,13 +561,13 @@ export function getInteractiveActionDialogue(
   if (action === 'vibe') {
     if (playerAdvantageCp >= 180) {
       return pickNonRepeating('interactive:vibe:win', [
-        { text: `We're up +${pawns}! Stay sharp and convert this cleanly — don't get sloppy!`, animation: 'celebrating' },
-        { text: `Eval is +${pawns} in our favor! Time to trade down or hunt their King!`, animation: 'confident' },
+        { text: 'We are winning. I repeat, WE are winning. Please do not do anything creative.', animation: 'celebrating' },
+        { text: `Eval is +${pawns} in our favor! Time to trade down or hunt their King cleanly!`, animation: 'confident' },
       ]);
     }
     if (playerAdvantageCp <= -180) {
       return pickNonRepeating('interactive:vibe:lose', [
-        { text: `We're down (${pawns}), so let's complicate the board and set tactical traps!`, animation: 'nervous' },
+        { text: 'So the plan is simple. We pretend this was a practice game.', animation: 'nervous' },
         { text: `Tough spot (${pawns}), but one sharp counterattack flips everything!`, animation: 'thinking' },
       ]);
     }

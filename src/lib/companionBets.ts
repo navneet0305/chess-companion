@@ -2,7 +2,9 @@ import type { ChessEvent } from './dialogueLibrary';
 
 export type CompanionSkitId =
   | 'none'
+  | 'crown_flex'
   | 'eat_mustache'
+  | 'headphone_jam'
   | 'turtle_hide'
   | 'espresso_balance'
   | 'sunglasses_flex'
@@ -25,43 +27,43 @@ export interface CompanionBet {
 
 export const MATCH_BETS: CompanionBet[] = [
   {
-    id: 'mustache_bet',
-    title: 'The Mustache Bet',
-    icon: '🥸',
-    betPrompt: "Bet: If you actually win this game, I'll peel off my mustache and EAT it!",
+    id: 'crown_bet',
+    title: 'The Crown Drop',
+    icon: '👑',
+    betPrompt: "Bet: Beat Stockfish and I'll drop the golden crown onto my headphones and spin!",
     triggerEvents: ['victory'],
-    skit: 'eat_mustache',
-    payoffLine: "NO WAY!! A deal's a deal... *peels mustache* CHOMP CHOMP... needs hot sauce!",
-    durationMs: 5200,
+    skit: 'crown_flex',
+    payoffLine: "CHECKMATE!! Drop the crown!! Long live the king of these 64 squares!",
+    durationMs: 5000,
   },
   {
-    id: 'espresso_queen_bet',
-    title: 'Espresso Nose Dare',
-    icon: '☕',
-    betPrompt: "Bet: Take their Queen and I'll balance an espresso cup on my nose!",
+    id: 'headphone_queen_bet',
+    title: 'DJ Beat Drop',
+    icon: '🎧',
+    betPrompt: "Bet: Snatch their Queen and I'll crank the headphones to 11 and jam out!",
     triggerEvents: ['capture_queen'],
-    skit: 'espresso_balance',
-    payoffLine: "YOU SNATCHED THE QUEEN?! Hold everything—look at this nose balance!!",
-    durationMs: 4800,
+    skit: 'headphone_jam',
+    payoffLine: "THE QUEEN IS GONE?! Cue the bass drop — let's dance on the board!",
+    durationMs: 4600,
   },
   {
-    id: 'turtle_blunder_bet',
-    title: 'Turtleneck Turtle',
-    icon: '🐢',
-    betPrompt: "Bet: Lose your Queen or blunder huge and I'm retreating into my turtleneck!",
+    id: 'espresso_dare',
+    title: 'Headphone Espresso Balance',
+    icon: '☕',
+    betPrompt: "Bet: Lose a Queen or blunder big and I'm tucking straight into my sneakers!",
     triggerEvents: ['lost_queen'],
     skit: 'turtle_hide',
-    payoffLine: "Nope! I didn't see that! I live inside my sweater collar now. Goodbye!",
-    durationMs: 4500,
+    payoffLine: "Nope, didn't see that! Hiding inside my purple sneakers now, wake me up later!",
+    durationMs: 4200,
   },
   {
     id: 'shades_genius_bet',
-    title: 'Grandmaster Shades',
+    title: 'Limitless Shades',
     icon: '🕶️',
-    betPrompt: "Bet: Play a Brilliant move (!!) and I'll break out the golden shades!",
+    betPrompt: "Bet: Play a Brilliant move (!!) and I'll slide on the golden shades!",
     triggerEvents: ['brilliant'],
     skit: 'sunglasses_flex',
-    payoffLine: "OH YEAH! Brilliant move! Too bright in here for mortal eyes!",
+    payoffLine: "OH YEAH!! Brilliant move! Too bright in here for mortal eyes!",
     durationMs: 4500,
   },
 ];
@@ -79,7 +81,6 @@ export function getSkitForCondition(params: {
 }): { skit: CompanionSkitId; payoffLine?: string; betTriggered?: boolean; durationMs: number } {
   const { event, isCheck, evalAdvantageCp = 0, activeBet } = params;
 
-  // 1. Check if active bet's condition was met!
   if (event && activeBet.triggerEvents.includes(event)) {
     return {
       skit: activeBet.skit,
@@ -89,16 +90,15 @@ export function getSkitForCondition(params: {
     };
   }
 
-  // 2. Check other dramatic conditions
   if (event === 'victory') {
     return {
-      skit: 'eat_mustache',
-      payoffLine: "WAIT WE WON?! Okay... *rips off mustache* ...CHOMP! Tastes like victory and wax!",
-      durationMs: 5200,
+      skit: 'crown_flex',
+      payoffLine: "WE WON?! Put the golden crown straight on my head — absolute royalty!",
+      durationMs: 5000,
     };
   }
   if (event === 'capture_queen') {
-    return { skit: 'victory_spin', durationMs: 3200 };
+    return { skit: 'headphone_jam', durationMs: 3600 };
   }
   if (event === 'brilliant') {
     return { skit: 'sunglasses_flex', durationMs: 3600 };
@@ -110,7 +110,7 @@ export function getSkitForCondition(params: {
     return { skit: 'sweat_nervous', durationMs: 3000 };
   }
   if (evalAdvantageCp >= 320) {
-    return { skit: 'sunglasses_flex', durationMs: 3000 };
+    return { skit: 'crown_flex', durationMs: 3200 };
   }
 
   return { skit: 'none', durationMs: 0 };

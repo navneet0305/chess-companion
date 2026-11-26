@@ -10,6 +10,7 @@ import {
   getSilentGesture,
   shouldSpeakForEvent,
   getInteractiveActionDialogue,
+  clearScriptBeatMemory,
   type DialogueContext,
 } from '../lib/companionDialogueEngine';
 import type { Personality, AnimationState } from '../types/companion';
@@ -63,7 +64,7 @@ export function useCompanionController({
 
   const [animationState, setAnimationState] = useState<AnimationState>('idle');
   const [currentText, setCurrentText] = useState<string>(
-    "Ready when you are! Let's see what you've got."
+    'Ah yes. Chess. A game of intelligence, patience, and apparently moving pieces wherever you feel like it.'
   );
   const [isGestureOnly, setIsGestureOnly] = useState<boolean>(false);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
@@ -136,6 +137,10 @@ export function useCompanionController({
     }
     lastHandledEventIdRef.current = latestEvent.id;
 
+    if (latestEvent.event === 'start') {
+      clearScriptBeatMemory();
+    }
+
     const currentPersonality = personalityRef.current;
     const ctx: DialogueContext = {
       ...liveContextRef.current,
@@ -168,7 +173,7 @@ export function useCompanionController({
 
     const now = Date.now();
     const msSinceSpoken = now - lastSpokenRef.current;
-    const willSpeak = shouldSpeakForEvent(latestEvent.event, msSinceSpoken);
+    const willSpeak = shouldSpeakForEvent(latestEvent.event, msSinceSpoken, ctx);
 
     if (willSpeak) {
       const pick = getContextualDialogue(currentPersonality, latestEvent.event, ctx);

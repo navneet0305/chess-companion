@@ -118,7 +118,7 @@ export default function BoardCompanionWalker3D({
     scene.add(rimLight);
 
     const rig = createBruno3DRig();
-    rig.root.scale.setScalar(0.54);
+    rig.root.scale.setScalar(0.58);
     rig.root.visible = false;
     scene.add(rig.root);
 
@@ -191,10 +191,10 @@ export default function BoardCompanionWalker3D({
       const fromPos = squareToBoardXZ(event.fromSquare, flipped);
       const toPos = squareToBoardXZ(event.toSquare, flipped);
 
-      // Emerge directly out of the companion portrait box at the TOP of the board!
+      // Emerge directly from above top edge of board where the companion stands!
       const boxPortalX = -2.1;
-      const boxPortalZ = -6.2; // Just above top edge of board (underneath companion box)
-      const baseStandY = 1.08;
+      const boxPortalZ = -6.2; // Just above top edge of board
+      const baseStandY = 0.92;
 
       let posX = boxPortalX;
       let posZ = boxPortalZ;

@@ -50,13 +50,13 @@ export const CHARACTER_PROFILES: Record<CharacterBase, {
 }> = {
   bruno: {
     name: 'Bruno',
-    title: 'COMEDY MAESTRO 🎭',
-    skin: '#d99b66', // Warm expressive human skin
-    skinShadow: '#92400e',
-    hair: '#1c1917', // Expressive dark maestro hair
+    title: 'CROWNED VIBES 👑',
+    skin: '#f4e8d8',
+    skinShadow: '#ebd7c2',
+    hair: '#673ab7',
     hairStyle: 'oscar',
-    collarStyle: 'turtleneck',
-    hasMustache: true,
+    collarStyle: 'hoodie',
+    hasMustache: false,
   },
   luffy: {
     name: 'Monkey D. Luffy',

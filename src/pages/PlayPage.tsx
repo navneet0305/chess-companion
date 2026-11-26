@@ -182,11 +182,22 @@ export default function PlayPage() {
       };
       const moveCtx: DialogueContext = {
         moveSan: move.san,
+        movedPiece: move.piece,
         capturedPieceName: move.captured ? pieceNames[move.captured] : undefined,
         moveNumber: Math.ceil((moveIndex + 1) / 2),
         isPlayerMove,
         evalScore: evalAfter.score,
       };
+
+      // Always prioritize Checkmate / Draw game-end reactions
+      if (game.isCheckmate() || move.san.includes('#')) {
+        triggerCompanionEvent(isPlayerMove ? 'victory' : 'defeat', moveCtx);
+        return;
+      }
+      if (game.isDraw() || game.isStalemate()) {
+        triggerCompanionEvent('draw', moveCtx);
+        return;
+      }
 
       // Priority Companion Reactions
       if (isPlayerMove) {
