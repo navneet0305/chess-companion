@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useRef, forwardRef } from 'react';
 import type { PieceSymbol } from 'chess.js';
 import type { ClassifiedMove } from '../../types/chess';
 import { CLASSIFICATION_BADGES } from '../../services/moveClassifier';
@@ -42,26 +41,6 @@ function formatMove(move: ClassifiedMove): string {
 }
 
 export default function MoveHistory({ moves, currentMoveIndex, onMoveClick }: MoveHistoryProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const activeRef = useRef<HTMLSpanElement>(null);
-
-  // Auto-scroll ONLY within the MoveHistory scroll box (never jump the outer page on mobile)
-  useEffect(() => {
-    const container = scrollRef.current;
-    const active = activeRef.current;
-    if (!container || !active) return;
-
-    const containerRect = container.getBoundingClientRect();
-    const activeRect = active.getBoundingClientRect();
-    if (containerRect.height === 0 || containerRect.width === 0) return;
-
-    if (activeRect.bottom > containerRect.bottom) {
-      container.scrollTop += activeRect.bottom - containerRect.bottom + 4;
-    } else if (activeRect.top < containerRect.top) {
-      container.scrollTop -= containerRect.top - activeRect.top + 4;
-    }
-  }, [currentMoveIndex]);
-
   // Build pairs: [ [whiteMove, blackMove?], ... ]
   const movePairs: [ClassifiedMove, ClassifiedMove | undefined][] = [];
   for (let i = 0; i < moves.length; i += 2) {
@@ -76,8 +55,8 @@ export default function MoveHistory({ moves, currentMoveIndex, onMoveClick }: Mo
         <span className="text-[10px] text-gray-500 font-mono">{moves.length} moves</span>
       </div>
 
-      {/* Scrollable move list */}
-      <div ref={scrollRef} className="max-h-64 overflow-y-auto overscroll-contain scrollbar-thin">
+      {/* Scrollable move list (manual scroll only — never auto-scrolls page or box on move) */}
+      <div className="max-h-64 overflow-y-auto overscroll-contain scrollbar-thin">
         {movePairs.length === 0 ? (
           <div className="px-3 py-6 text-center text-xs text-gray-600">No moves yet</div>
         ) : (
@@ -100,7 +79,6 @@ export default function MoveHistory({ moves, currentMoveIndex, onMoveClick }: Mo
                     {/* White move */}
                     <td className="w-[45%] py-1 px-1.5">
                       <MoveCell
-                        ref={whiteIdx === currentMoveIndex ? activeRef : undefined}
                         move={white}
                         isActive={whiteIdx === currentMoveIndex}
                         onClick={() => onMoveClick?.(whiteIdx)}
@@ -111,7 +89,6 @@ export default function MoveHistory({ moves, currentMoveIndex, onMoveClick }: Mo
                     <td className="w-[45%] py-1 px-1.5">
                       {black ? (
                         <MoveCell
-                          ref={blackIdx === currentMoveIndex ? activeRef : undefined}
                           move={black}
                           isActive={blackIdx === currentMoveIndex}
                           onClick={() => onMoveClick?.(blackIdx)}
@@ -141,36 +118,31 @@ interface MoveCellProps {
   onClick?: () => void;
 }
 
-const MoveCell = forwardRef<HTMLSpanElement, MoveCellProps>(
-  ({ move, isActive, onClick }, ref) => {
-    const badge = move.classification ? CLASSIFICATION_BADGES[move.classification] : null;
+function MoveCell({ move, isActive, onClick }: MoveCellProps) {
+  const badge = move.classification ? CLASSIFICATION_BADGES[move.classification] : null;
 
-    return (
-      <span
-        ref={ref}
-        onClick={onClick}
-        className={`inline-flex items-center gap-1.5 cursor-pointer rounded px-1.5 py-0.5 transition-colors ${
-          isActive
-            ? 'bg-green-500/20 text-green-400 font-medium'
-            : 'text-gray-300 hover:bg-[#2a2a2a] hover:text-white'
-        }`}
-      >
-        <span>{formatMove(move)}</span>
-        {badge && (
-          <span
-            className="text-[10px] font-bold px-1 py-0.2 rounded leading-tight"
-            style={{
-              color: badge.color,
-              backgroundColor: badge.bg,
-            }}
-            title={badge.label}
-          >
-            {badge.symbol}
-          </span>
-        )}
-      </span>
-    );
-  }
-);
-
-MoveCell.displayName = 'MoveCell';
+  return (
+    <span
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 cursor-pointer rounded px-1.5 py-0.5 transition-colors ${
+        isActive
+          ? 'bg-green-500/20 text-green-400 font-medium'
+          : 'text-gray-300 hover:bg-[#2a2a2a] hover:text-white'
+      }`}
+    >
+      <span>{formatMove(move)}</span>
+      {badge && (
+        <span
+          className="text-[10px] font-bold px-1 py-0.2 rounded leading-tight"
+          style={{
+            color: badge.color,
+            backgroundColor: badge.bg,
+          }}
+          title={badge.label}
+        >
+          {badge.symbol}
+        </span>
+      )}
+    </span>
+  );
+}

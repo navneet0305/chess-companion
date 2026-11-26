@@ -93,7 +93,7 @@ export default function CompanionFloatingPresence({
 
         {/* Floating Speech / Gesture Bubble only (no heavy HUD box) */}
         <div className="relative min-w-0 max-w-[360px] flex-1">
-          <div className="relative bg-[#1a1d26]/90 backdrop-blur-md border border-[#313847] rounded-2xl px-3.5 py-2.5 shadow-lg">
+          <div className="relative min-h-[68px] flex items-center bg-[#1a1d26]/90 backdrop-blur-md border border-[#313847] rounded-2xl px-3.5 py-2.5 shadow-lg">
             {/* Bubble tail pointing toward companion */}
             <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[8px] border-r-[#313847]" />
             <div className="absolute -left-[6px] top-1/2 -translate-y-1/2 w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-r-[7px] border-r-[#1a1d26]" />

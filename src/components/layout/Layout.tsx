@@ -17,7 +17,7 @@ export default function Layout() {
           <AbilityProvider>
             <PieceSkinProvider>
               <EliminationProvider>
-                <div className="min-h-screen flex flex-col bg-[#0f0f0f] text-[#f5f5f5] relative overflow-x-hidden">
+                <div className="min-h-screen flex flex-col bg-[#0f0f0f] text-[#f5f5f5] relative overflow-x-clip">
                   {/* Drifting Snowflake Particles (Phase 5 Seasonal Theme) */}
                   <SnowEffect />
 
