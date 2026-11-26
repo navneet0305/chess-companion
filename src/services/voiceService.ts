@@ -5,6 +5,9 @@
  * 2. OpenAI TTS-1 API (when API key is configured)
  * 3. Free StreamElements Neural TTS API (no key required, with automatic fallback)
  * 4. Humanized Browser Neural SpeechSynthesis (enhanced voices, emoji stripping, natural prosody)
+ *
+ * Includes persistent mobile HTMLAudioElement & SpeechSynthesis unlocking so async
+ * network TTS responses and Stockfish move callbacks play cleanly on iOS Safari & Android Chrome.
  */
 
 import type { Personality } from '../types/companion';
@@ -21,7 +24,15 @@ export interface VoiceApiSettings {
   streamElementsVoice: string;
 }
 
+export interface VoiceStatus {
+  ok: boolean;
+  provider: string;
+  message: string;
+}
+
 const VOICE_SETTINGS_KEY = 'chessmate_voice_api_settings_v2';
+const SILENT_WAV_DATA_URI =
+  'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
 export const ELEVENLABS_VOICES = [
   { id: 'YOq2y2Up4RgXP2HyXjE5', name: 'Xavier (Library — Requires Paid Plan)' },
@@ -138,24 +149,148 @@ class CompanionVoiceManager {
   private synth: SpeechSynthesis | null = null;
   private voices: SpeechSynthesisVoice[] = [];
   private isMuted: boolean = false;
-  private currentAudio: HTMLAudioElement | null = null;
+  private sharedAudio: HTMLAudioElement | null = null;
+  private isPlayingAudio: boolean = false;
+  private audioUnlocked: boolean = false;
+  private speechPrimed: boolean = false;
+  private audioContext: AudioContext | null = null;
   private currentAudioUrl: string | null = null;
+  private currentUtterance: SpeechSynthesisUtterance | null = null;
   private settings: VoiceApiSettings = DEFAULT_VOICE_SETTINGS;
   private streamElementsBlocked: boolean = false;
   private activeSpeakId: number = 0;
   private abortController: AbortController | null = null;
   private browserTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private activeOnEnd: (() => void) | null = null;
+  private statusListeners = new Set<(status: VoiceStatus) => void>();
+  private lastStatus: VoiceStatus = {
+    ok: true,
+    provider: 'ready',
+    message: ENV_ELEVENLABS_KEY
+      ? 'ElevenLabs Xavier ready'
+      : 'Auto mode ready (paste API key for ElevenLabs/OpenAI)',
+  };
 
   constructor() {
     this.loadSettings();
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      this.synth = window.speechSynthesis;
-      this.loadVoices();
-      if (this.synth.onvoiceschanged !== undefined) {
-        this.synth.onvoiceschanged = () => this.loadVoices();
+    if (typeof window !== 'undefined') {
+      if ('speechSynthesis' in window) {
+        this.synth = window.speechSynthesis;
+        this.loadVoices();
+        if (this.synth.onvoiceschanged !== undefined) {
+          this.synth.onvoiceschanged = () => this.loadVoices();
+        }
+      }
+
+      const handleFirstGesture = () => {
+        this.unlockAudio(true);
+        if (this.audioUnlocked && this.speechPrimed) {
+          window.removeEventListener('pointerdown', handleFirstGesture, true);
+          window.removeEventListener('touchstart', handleFirstGesture, true);
+          window.removeEventListener('keydown', handleFirstGesture, true);
+        }
+      };
+
+      window.addEventListener('pointerdown', handleFirstGesture, { capture: true, passive: true });
+      window.addEventListener('touchstart', handleFirstGesture, { capture: true, passive: true });
+      window.addEventListener('keydown', handleFirstGesture, { capture: true, passive: true });
+    }
+  }
+
+  private getOrCreateSharedAudio(): HTMLAudioElement | null {
+    if (typeof Audio === 'undefined') return null;
+    if (!this.sharedAudio) {
+      const audio = new Audio();
+      audio.preload = 'auto';
+      audio.setAttribute('playsinline', '');
+      audio.setAttribute('webkit-playsinline', '');
+      this.sharedAudio = audio;
+    }
+    return this.sharedAudio;
+  }
+
+  /**
+   * Unlocks a single persistent HTMLAudioElement + Web Audio context + mobile SpeechSynthesis
+   * inside user gestures so async fetch audio plays on iOS Safari & Android Chrome.
+   */
+  public unlockAudio(primeSynth: boolean = false) {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (AudioCtx) {
+        if (!this.audioContext) {
+          this.audioContext = new AudioCtx();
+        }
+        if (this.audioContext.state === 'suspended') {
+          this.audioContext.resume().catch(() => {});
+        }
+      }
+    } catch {
+      // Ignore AudioContext restrictions
+    }
+
+    const audio = this.getOrCreateSharedAudio();
+    if (audio && !this.audioUnlocked && !this.isPlayingAudio) {
+      this.audioUnlocked = true;
+      audio.muted = true;
+      audio.volume = 0;
+      audio.src = SILENT_WAV_DATA_URI;
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise
+          .then(() => {
+            if (!this.isPlayingAudio && this.sharedAudio) {
+              this.sharedAudio.pause();
+              this.sharedAudio.currentTime = 0;
+              this.sharedAudio.muted = false;
+              this.sharedAudio.volume = 1;
+            }
+          })
+          .catch(() => {
+            this.audioUnlocked = false;
+            if (this.sharedAudio) {
+              this.sharedAudio.muted = false;
+              this.sharedAudio.volume = 1;
+            }
+          });
+      } else {
+        audio.muted = false;
+        audio.volume = 1;
       }
     }
+
+    if (primeSynth && !this.speechPrimed && this.synth) {
+      this.speechPrimed = true;
+      try {
+        if (!this.synth.speaking && !this.synth.pending) {
+          const primer = new SpeechSynthesisUtterance('');
+          primer.volume = 0;
+          this.synth.speak(primer);
+        }
+      } catch {
+        this.speechPrimed = false;
+      }
+    }
+  }
+
+  private setStatus(status: VoiceStatus) {
+    this.lastStatus = status;
+    this.statusListeners.forEach((cb) => cb(status));
+  }
+
+  public getStatus(): VoiceStatus {
+    return this.lastStatus;
+  }
+
+  public subscribeStatus(listener: (status: VoiceStatus) => void): () => void {
+    this.statusListeners.add(listener);
+    listener(this.lastStatus);
+    return () => {
+      this.statusListeners.delete(listener);
+    };
   }
 
   private loadSettings() {
@@ -163,7 +298,12 @@ class CompanionVoiceManager {
     try {
       const saved = localStorage.getItem(VOICE_SETTINGS_KEY);
       if (saved) {
-        this.settings = { ...DEFAULT_VOICE_SETTINGS, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved);
+        this.settings = {
+          ...DEFAULT_VOICE_SETTINGS,
+          ...parsed,
+          elevenLabsApiKey: parsed.elevenLabsApiKey || DEFAULT_VOICE_SETTINGS.elevenLabsApiKey,
+        };
       }
     } catch {
       this.settings = DEFAULT_VOICE_SETTINGS;
@@ -198,7 +338,10 @@ class CompanionVoiceManager {
     }
   }
 
-  public stop() {
+  /**
+   * Stops active playback and cancels any pending speech. Returns true if Web Speech was busy.
+   */
+  public stop(): boolean {
     this.activeSpeakId++;
     if (this.abortController) {
       this.abortController.abort();
@@ -208,17 +351,24 @@ class CompanionVoiceManager {
       clearTimeout(this.browserTimeoutId);
       this.browserTimeoutId = null;
     }
-    if (this.synth) {
+
+    let synthWasBusy = false;
+    if (this.synth && (this.synth.speaking || this.synth.pending)) {
+      synthWasBusy = true;
       this.synth.cancel();
     }
-    if (this.currentAudio) {
-      this.currentAudio.onplay = null;
-      this.currentAudio.onended = null;
-      this.currentAudio.onerror = null;
-      this.currentAudio.pause();
-      this.currentAudio.src = '';
-      this.currentAudio = null;
+    this.currentUtterance = null;
+
+    if (this.sharedAudio) {
+      this.sharedAudio.onplay = null;
+      this.sharedAudio.onended = null;
+      this.sharedAudio.onerror = null;
+      this.sharedAudio.pause();
+      this.sharedAudio.muted = false;
+      this.sharedAudio.volume = 1;
     }
+    this.isPlayingAudio = false;
+
     if (this.currentAudioUrl) {
       URL.revokeObjectURL(this.currentAudioUrl);
       this.currentAudioUrl = null;
@@ -228,6 +378,7 @@ class CompanionVoiceManager {
       this.activeOnEnd = null;
       endCb();
     }
+    return synthWasBusy;
   }
 
   private findBestVoice(preferredNames: string[]): SpeechSynthesisVoice | null {
@@ -272,12 +423,16 @@ class CompanionVoiceManager {
   ): Promise<boolean> {
     if (this.isMuted || speakId !== this.activeSpeakId) return false;
 
-    // Ensure no lingering audio element plays simultaneously
-    if (this.currentAudio) {
-      this.currentAudio.pause();
-      this.currentAudio.src = '';
-      this.currentAudio = null;
-    }
+    const audio = this.getOrCreateSharedAudio();
+    if (!audio) return false;
+
+    audio.onplay = null;
+    audio.onended = null;
+    audio.onerror = null;
+    audio.pause();
+    audio.muted = false;
+    audio.volume = 1;
+
     if (this.currentAudioUrl) {
       URL.revokeObjectURL(this.currentAudioUrl);
       this.currentAudioUrl = null;
@@ -285,31 +440,44 @@ class CompanionVoiceManager {
 
     const url = URL.createObjectURL(blob);
     this.currentAudioUrl = url;
-    const audio = new Audio(url);
-    this.currentAudio = audio;
+    this.isPlayingAudio = true;
     this.activeOnEnd = onEnd || null;
+    audio.src = url;
 
     return new Promise((resolve) => {
       audio.onplay = () => {
         if (speakId !== this.activeSpeakId) {
           audio.pause();
+          this.isPlayingAudio = false;
           return;
         }
         onStart?.();
       };
       audio.onended = () => {
+        this.isPlayingAudio = false;
         if (speakId === this.activeSpeakId) {
           this.stop();
         }
         resolve(true);
       };
       audio.onerror = () => {
+        this.isPlayingAudio = false;
         if (speakId === this.activeSpeakId) {
           this.stop();
         }
         resolve(false);
       };
-      audio.play().catch(() => {
+      audio.play().catch((err: unknown) => {
+        this.isPlayingAudio = false;
+        const name = err instanceof Error ? err.name : '';
+        if (name === 'NotAllowedError') {
+          this.audioUnlocked = false;
+          this.setStatus({
+            ok: false,
+            provider: 'blocked',
+            message: 'Mobile browser paused audio — tap board or Test Voice to unlock',
+          });
+        }
         if (speakId === this.activeSpeakId) {
           this.stop();
         }
@@ -327,7 +495,21 @@ class CompanionVoiceManager {
   ): Promise<boolean> {
     const key = this.settings.elevenLabsApiKey.trim();
     const voiceId = this.settings.elevenLabsVoiceId.trim() || 'pNInz6obpgDQGcFmaJgB';
-    if (!key || speakId !== this.activeSpeakId) return false;
+    if (!key) {
+      this.setStatus({
+        ok: false,
+        provider: 'elevenlabs',
+        message: 'No ElevenLabs API key saved on this device — using fallback',
+      });
+      return false;
+    }
+    if (speakId !== this.activeSpeakId) return false;
+
+    this.setStatus({
+      ok: true,
+      provider: 'elevenlabs',
+      message: 'Generating ElevenLabs voice...',
+    });
 
     const callTts = async (vid: string) =>
       fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}`, {
@@ -350,17 +532,47 @@ class CompanionVoiceManager {
       });
 
     try {
-      let res = await callTts(voiceId);
+      let usedVoiceId = voiceId;
+      let res = await callTts(usedVoiceId);
       if (speakId !== this.activeSpeakId) return false;
-      if (res.status === 402 && voiceId !== 'pNInz6obpgDQGcFmaJgB') {
-        res = await callTts('pNInz6obpgDQGcFmaJgB');
+      if ((res.status === 402 || res.status === 404) && usedVoiceId !== 'pNInz6obpgDQGcFmaJgB') {
+        usedVoiceId = 'pNInz6obpgDQGcFmaJgB';
+        res = await callTts(usedVoiceId);
         if (speakId !== this.activeSpeakId) return false;
       }
-      if (!res.ok) return false;
+      if (!res.ok) {
+        this.setStatus({
+          ok: false,
+          provider: 'elevenlabs',
+          message:
+            res.status === 401
+              ? 'ElevenLabs API key invalid or expired (HTTP 401)'
+              : `ElevenLabs unavailable (HTTP ${res.status}) — using fallback`,
+        });
+        return false;
+      }
       const blob = await res.blob();
       if (speakId !== this.activeSpeakId) return false;
-      return await this.playBlobAudio(blob, speakId, onStart, onEnd);
+      const played = await this.playBlobAudio(blob, speakId, onStart, onEnd);
+      if (played) {
+        this.setStatus({
+          ok: true,
+          provider: 'elevenlabs',
+          message:
+            usedVoiceId === 'YOq2y2Up4RgXP2HyXjE5'
+              ? 'Playing ElevenLabs (Xavier)'
+              : 'Playing ElevenLabs (Adam fallback)',
+        });
+      }
+      return played;
     } catch {
+      if (!signal.aborted) {
+        this.setStatus({
+          ok: false,
+          provider: 'elevenlabs',
+          message: 'Network error reaching ElevenLabs — using fallback',
+        });
+      }
       return false;
     }
   }
@@ -374,7 +586,15 @@ class CompanionVoiceManager {
     onEnd?: () => void
   ): Promise<boolean> {
     const key = this.settings.openAiApiKey.trim();
-    if (!key || speakId !== this.activeSpeakId) return false;
+    if (!key) {
+      this.setStatus({
+        ok: false,
+        provider: 'openai',
+        message: 'No OpenAI API key saved on this device — using fallback',
+      });
+      return false;
+    }
+    if (speakId !== this.activeSpeakId) return false;
 
     const charVoice = character ? CHARACTER_VOICE_DEFAULTS[character]?.openAiVoice : undefined;
     const voice = this.settings.openAiVoice || charVoice || 'echo';
@@ -394,10 +614,23 @@ class CompanionVoiceManager {
           response_format: 'mp3',
         }),
       });
-      if (!res.ok || speakId !== this.activeSpeakId) return false;
+      if (!res.ok || speakId !== this.activeSpeakId) {
+        if (!signal.aborted) {
+          this.setStatus({
+            ok: false,
+            provider: 'openai',
+            message: `OpenAI TTS failed (HTTP ${res.status}) — using fallback`,
+          });
+        }
+        return false;
+      }
       const blob = await res.blob();
       if (speakId !== this.activeSpeakId) return false;
-      return await this.playBlobAudio(blob, speakId, onStart, onEnd);
+      const played = await this.playBlobAudio(blob, speakId, onStart, onEnd);
+      if (played) {
+        this.setStatus({ ok: true, provider: 'openai', message: `Playing OpenAI (${voice})` });
+      }
+      return played;
     } catch {
       return false;
     }
@@ -421,17 +654,25 @@ class CompanionVoiceManager {
       )}&text=${encodeURIComponent(text)}`;
       const res = await fetch(url, { signal });
       if (!res.ok || speakId !== this.activeSpeakId) {
-        if (!signal.aborted) this.streamElementsBlocked = true;
+        if (!signal.aborted && (res.status === 401 || res.status === 403 || res.status === 404)) {
+          this.streamElementsBlocked = true;
+        }
         return false;
       }
       const blob = await res.blob();
       if (blob.size < 200 || speakId !== this.activeSpeakId) {
-        if (blob.size < 200) this.streamElementsBlocked = true;
         return false;
       }
-      return await this.playBlobAudio(blob, speakId, onStart, onEnd);
+      const played = await this.playBlobAudio(blob, speakId, onStart, onEnd);
+      if (played) {
+        this.setStatus({
+          ok: true,
+          provider: 'streamelements',
+          message: `Playing Free Neural Voice (${voice})`,
+        });
+      }
+      return played;
     } catch {
-      if (!signal.aborted) this.streamElementsBlocked = true;
       return false;
     }
   }
@@ -442,9 +683,17 @@ class CompanionVoiceManager {
     personality: Personality,
     character?: CharacterBase,
     onStart?: () => void,
-    onEnd?: () => void
+    onEnd?: () => void,
+    deferForCancel: boolean = false
   ) {
     if (!this.synth || this.isMuted || speakId !== this.activeSpeakId) {
+      if (!this.synth) {
+        this.setStatus({
+          ok: false,
+          provider: 'browser',
+          message: 'Speech synthesis unavailable on this browser',
+        });
+      }
       onEnd?.();
       return;
     }
@@ -465,30 +714,52 @@ class CompanionVoiceManager {
     utterance.rate = Math.max(0.82, Math.min(1.22, config.rate + rateJitter));
     utterance.volume = 1.0;
 
+    this.currentUtterance = utterance;
     this.activeOnEnd = onEnd || null;
+
     utterance.onstart = () => {
       if (speakId === this.activeSpeakId) onStart?.();
     };
     utterance.onend = () => {
       if (speakId === this.activeSpeakId) {
+        this.currentUtterance = null;
         this.activeOnEnd = null;
         onEnd?.();
       }
     };
     utterance.onerror = () => {
       if (speakId === this.activeSpeakId) {
+        this.currentUtterance = null;
         this.activeOnEnd = null;
         onEnd?.();
       }
     };
 
-    this.browserTimeoutId = setTimeout(() => {
-      this.browserTimeoutId = null;
+    const runSpeak = () => {
       if (this.synth && !this.isMuted && speakId === this.activeSpeakId) {
-        this.synth.cancel();
+        this.speechPrimed = true;
         this.synth.speak(utterance);
+        if (!this.lastStatus.ok || this.lastStatus.provider === 'ready') {
+          this.setStatus({
+            ok: true,
+            provider: 'browser',
+            message: this.settings.elevenLabsApiKey.trim()
+              ? 'Playing via Browser Neural fallback'
+              : 'Playing via Browser Voice (paste ElevenLabs key for AI voice)',
+          });
+        }
       }
-    }, 40);
+    };
+
+    // Call synchronously on fresh taps so iOS Safari & Android Chrome preserve user gesture!
+    if (deferForCancel) {
+      this.browserTimeoutId = setTimeout(() => {
+        this.browserTimeoutId = null;
+        runSpeak();
+      }, 60);
+    } else {
+      runSpeak();
+    }
   }
 
   public async speak(
@@ -503,8 +774,11 @@ class CompanionVoiceManager {
       return;
     }
 
+    // Unlock shared HTMLAudioElement synchronously inside any triggering gesture
+    this.unlockAudio(false);
+
     // Cancel any active or in-flight speech request cleanly before starting a new one
-    this.stop();
+    const synthWasBusy = this.stop();
     const speakId = this.activeSpeakId;
     const controller = new AbortController();
     this.abortController = controller;
@@ -534,7 +808,15 @@ class CompanionVoiceManager {
     }
 
     if (speakId !== this.activeSpeakId || this.isMuted) return;
-    this.speakBrowserHumanized(text, speakId, personality, character, onStart, onEnd);
+    this.speakBrowserHumanized(
+      text,
+      speakId,
+      personality,
+      character,
+      onStart,
+      onEnd,
+      synthWasBusy
+    );
   }
 }
 

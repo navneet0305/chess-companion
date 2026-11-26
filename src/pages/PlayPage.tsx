@@ -829,17 +829,13 @@ export default function PlayPage() {
             freeRoam={companion.freeRoam}
             activeBet={companion.activeBet}
             voiceSettings={companion.voiceSettings}
+            voiceStatus={companion.voiceStatus}
             onToggleVoiceMuted={companion.toggleVoiceMuted}
             onSelectPersonality={companion.handleSelectPersonality}
             onInteractiveAction={companion.handleInteractiveAction}
             onToggleFreeRoam={companion.toggleFreeRoam}
             onVoiceSettingChange={companion.handleVoiceSettingChange}
-            onTestVoice={() =>
-              companion.speakLine(
-                `Hey! This is ${companion.characterName} checking in with my realistic voice! Let's crush this match!`,
-                companion.personality
-              )
-            }
+            onTestVoice={companion.handleTestVoice}
             onRunDare={companion.handleRunDare}
             onNextBet={companion.handleNextBet}
           />

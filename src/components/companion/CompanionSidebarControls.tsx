@@ -6,6 +6,7 @@ import {
   ELEVENLABS_VOICES,
   type VoiceApiProvider,
   type VoiceApiSettings,
+  type VoiceStatus,
 } from '../../services/voiceService';
 import type { Personality } from '../../types/companion';
 import type { CompanionBet } from '../../lib/companionBets';
@@ -20,6 +21,7 @@ interface CompanionSidebarControlsProps {
   freeRoam: boolean;
   activeBet: CompanionBet;
   voiceSettings: VoiceApiSettings;
+  voiceStatus?: VoiceStatus;
   onToggleVoiceMuted: () => void;
   onSelectPersonality: (personality: Personality) => void;
   onInteractiveAction: (action: 'hint' | 'vibe' | 'hype') => void;
@@ -43,6 +45,7 @@ export default function CompanionSidebarControls({
   freeRoam,
   activeBet,
   voiceSettings,
+  voiceStatus,
   onToggleVoiceMuted,
   onSelectPersonality,
   onInteractiveAction,
@@ -176,6 +179,12 @@ export default function CompanionSidebarControls({
         >
           <span>🎙️</span>
           <span>Voice API</span>
+          {voiceSettings.provider === 'elevenlabs' && !voiceSettings.elevenLabsApiKey.trim() && (
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-amber-400"
+              title="Add ElevenLabs API key for this device"
+            />
+          )}
         </button>
       </div>
 
@@ -252,6 +261,11 @@ export default function CompanionSidebarControls({
                       }
                       className="w-full bg-[#242631] border border-[#3a3d4d] rounded-lg px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400"
                     />
+                    {!voiceSettings.elevenLabsApiKey.trim() && (
+                      <p className="text-[10px] text-amber-300/90 leading-tight">
+                        Saved only on this device (localStorage). Without a key, Browser / Free Neural voice is used.
+                      </p>
+                    )}
                   </div>
                 </>
               )}
@@ -280,6 +294,18 @@ export default function CompanionSidebarControls({
               >
                 🔊 Test Humanized Voice
               </button>
+
+              {voiceStatus && (
+                <p
+                  className={`text-[10px] leading-tight px-2 py-1 rounded border ${
+                    voiceStatus.ok
+                      ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
+                      : 'bg-amber-950/40 border-amber-500/30 text-amber-300'
+                  }`}
+                >
+                  {voiceStatus.message}
+                </p>
+              )}
             </div>
           </motion.div>
         )}

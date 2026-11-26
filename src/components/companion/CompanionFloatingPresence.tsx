@@ -52,7 +52,7 @@ export default function CompanionFloatingPresence({
       dragMomentum={false}
       animate={freeRoam ? undefined : { x: 0, y: 0 }}
       className={`w-full max-w-[560px] mx-auto mb-1 select-none relative overflow-visible ${
-        freeRoam ? 'z-50 cursor-grab active:cursor-grabbing' : 'z-40'
+        freeRoam ? 'z-50 cursor-grab active:cursor-grabbing touch-none' : 'z-40'
       }`}
     >
       <div className="flex items-center justify-start gap-2 sm:gap-3 pl-2 sm:pl-5 overflow-visible">

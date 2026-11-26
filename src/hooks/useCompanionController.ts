@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   companionVoice,
   type VoiceApiSettings,
+  type VoiceStatus,
 } from '../services/voiceService';
 import type { ChessEvent } from '../lib/dialogueLibrary';
 import {
@@ -73,6 +74,13 @@ export function useCompanionController({
   const [voiceSettings, setVoiceSettings] = useState<VoiceApiSettings>(() =>
     companionVoice.getSettings()
   );
+  const [voiceStatus, setVoiceStatus] = useState<VoiceStatus>(() =>
+    companionVoice.getStatus()
+  );
+
+  useEffect(() => {
+    return companionVoice.subscribeStatus(setVoiceStatus);
+  }, []);
 
   const skitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSpokenRef = useRef<number>(0);
@@ -330,12 +338,26 @@ export function useCompanionController({
     freeRoam,
     toggleFreeRoam: () => setFreeRoam((prev) => !prev),
     voiceSettings,
+    voiceStatus,
     handleCompanionClick,
     handleInteractiveAction,
     handleVoiceSettingChange,
     handleSelectPersonality,
     handleRunDare,
     handleNextBet,
+    handleTestVoice: () => {
+      if (isVoiceMutedRef.current) setIsVoiceMuted(false);
+      companionVoice.setMuted(false);
+      companionVoice.unlockAudio(false);
+      lastSpokenRef.current = Date.now();
+      companionVoice.speak(
+        `Hey! This is ${profile.name} checking in with my realistic voice! Let's crush this match!`,
+        personalityRef.current,
+        () => setIsSpeaking(true),
+        () => setIsSpeaking(false),
+        characterRef.current
+      );
+    },
     speakLine,
   };
 }

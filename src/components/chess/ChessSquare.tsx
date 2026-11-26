@@ -76,7 +76,7 @@ const ChessSquare = memo(function ChessSquare({
       tabIndex={0}
       data-square={square}
       className={`
-        relative flex items-center justify-center
+        relative flex items-center justify-center touch-manipulation select-none
         ${hasPiece ? 'cursor-grab active:cursor-grabbing' : isLegalMove ? 'cursor-pointer' : 'cursor-default'}
       `}
       style={{ backgroundColor: bgColor }}

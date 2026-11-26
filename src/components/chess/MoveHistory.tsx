@@ -45,10 +45,20 @@ export default function MoveHistory({ moves, currentMoveIndex, onMoveClick }: Mo
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLSpanElement>(null);
 
-  // Auto-scroll to the latest / active move
+  // Auto-scroll ONLY within the MoveHistory scroll box (never jump the outer page on mobile)
   useEffect(() => {
-    if (activeRef.current && scrollRef.current) {
-      activeRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    const container = scrollRef.current;
+    const active = activeRef.current;
+    if (!container || !active) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const activeRect = active.getBoundingClientRect();
+    if (containerRect.height === 0 || containerRect.width === 0) return;
+
+    if (activeRect.bottom > containerRect.bottom) {
+      container.scrollTop += activeRect.bottom - containerRect.bottom + 4;
+    } else if (activeRect.top < containerRect.top) {
+      container.scrollTop -= containerRect.top - activeRect.top + 4;
     }
   }, [currentMoveIndex]);
 
@@ -67,7 +77,7 @@ export default function MoveHistory({ moves, currentMoveIndex, onMoveClick }: Mo
       </div>
 
       {/* Scrollable move list */}
-      <div ref={scrollRef} className="max-h-64 overflow-y-auto scrollbar-thin">
+      <div ref={scrollRef} className="max-h-64 overflow-y-auto overscroll-contain scrollbar-thin">
         {movePairs.length === 0 ? (
           <div className="px-3 py-6 text-center text-xs text-gray-600">No moves yet</div>
         ) : (
