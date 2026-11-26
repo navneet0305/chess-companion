@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import DifficultySelector from './DifficultySelector';
@@ -34,6 +34,15 @@ export default function NewGameDialog({
   const [timeControl, setTimeControl] = useState<TimeControl>(initialTimeControl);
   const [sideChoice, setSideChoice] = useState<SideChoice>(initialPlayerColor);
 
+  // Sync latest active game settings whenever dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setDifficulty(initialDifficulty);
+      setTimeControl(initialTimeControl);
+      setSideChoice(initialPlayerColor);
+    }
+  }, [isOpen, initialDifficulty, initialTimeControl, initialPlayerColor]);
+
   const handleStart = () => {
     let resolvedColor: PlayerColor = 'w';
     if (sideChoice === 'random') {
@@ -51,20 +60,25 @@ export default function NewGameDialog({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="New Game Setup">
-      <div className="space-y-6">
-        <SideSelector selected={sideChoice} onSelect={setSideChoice} />
-        <DifficultySelector selected={difficulty} onSelect={setDifficulty} />
-        <TimeControlSelector selected={timeControl} onSelect={setTimeControl} />
-
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#2a2a2a]">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="New Game Setup"
+      footer={
+        <div className="flex items-center justify-end gap-3">
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleStart}>
+          <Button variant="primary" onClick={handleStart} autoFocus>
             Start Game
           </Button>
         </div>
+      }
+    >
+      <div className="space-y-5">
+        <SideSelector selected={sideChoice} onSelect={setSideChoice} />
+        <DifficultySelector selected={difficulty} onSelect={setDifficulty} />
+        <TimeControlSelector selected={timeControl} onSelect={setTimeControl} />
       </div>
     </Modal>
   );

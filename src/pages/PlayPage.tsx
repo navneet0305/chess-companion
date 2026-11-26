@@ -808,17 +808,61 @@ export default function PlayPage() {
 
         {/* Right Panel: Companion Options, Material Advantage & Quick Settings */}
         <div className="lg:col-span-3 flex flex-col gap-4">
-          {/* Status on mobile */}
-          <div className="flex lg:hidden items-center justify-between p-3 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a]">
-            <span className="text-xs font-semibold text-gray-400">Status</span>
-            <GameStatus
-              status={status}
-              isCheck={isCheck}
-              isCheckmate={isCheckmate}
-              isStalemate={isStalemate}
-              isDraw={isDraw}
-              endReason={endReason}
-            />
+          {/* Status & Quick Match Settings on mobile */}
+          <div className="flex lg:hidden flex-col gap-2.5 p-3.5 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a]">
+            <div className="flex items-center justify-between pb-2 border-b border-[#2a2a2a]">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                Match Settings
+              </span>
+              <GameStatus
+                status={status}
+                isCheck={isCheck}
+                isCheckmate={isCheckmate}
+                isStalemate={isStalemate}
+                isDraw={isDraw}
+                endReason={endReason}
+              />
+            </div>
+
+            <div className="flex justify-between items-center text-xs text-gray-400 gap-2">
+              <span>Difficulty / Elo:</span>
+              <select
+                value={currentDifficulty}
+                onChange={(e) => {
+                  const val = e.target.value as Difficulty;
+                  setCurrentDifficulty(val);
+                  setDifficulty(val);
+                }}
+                className="bg-[#242424] border border-[#3a3a3a] text-xs font-semibold text-green-400 rounded px-2 py-1 focus:outline-none focus:border-green-500 cursor-pointer"
+              >
+                {Object.entries(DIFFICULTY_CONFIG).map(([k, cfg]) => (
+                  <option key={k} value={k}>
+                    {cfg.label} ({cfg.elo})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-between items-center text-xs text-gray-400 gap-2">
+              <span>Time Control:</span>
+              <select
+                value={activeTimeControl.name}
+                onChange={(e) => {
+                  const tc = TIME_CONTROLS.find((t) => t.name === e.target.value);
+                  if (tc) {
+                    setActiveTimeControl(tc);
+                    clock.reset(tc.time);
+                  }
+                }}
+                className="bg-[#242424] border border-[#3a3a3a] text-xs font-semibold text-gray-200 rounded px-2 py-1 focus:outline-none focus:border-green-500 cursor-pointer"
+              >
+                {TIME_CONTROLS.map((tc) => (
+                  <option key={tc.name} value={tc.name}>
+                    {tc.name === 'Unlimited' ? '∞ Unlimited (3D Walk)' : tc.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Companion Interactive Controls & Voice / Personality / Match Bets */}
