@@ -18,9 +18,14 @@ cp .env.example .env.local # optionally add VITE_ELEVENLABS_API_KEY
 npm run dev
 ```
 
-## Build
+## Build & Deploy (GitHub Pages)
 
 ```bash
 npm run build
 npm run preview
 ```
+
+This repository includes `.github/workflows/deploy.yml`, which automatically builds with the repository subpath (`GITHUB_REPOSITORY`) and deploys to your GitHub Pages domain (`https://<username>.github.io/<repo>/`) on every push to `main`.
+
+> **Note:** Enable GitHub Pages via **Settings → Pages → Source: GitHub Actions** if it does not auto-enable on your first push.
+

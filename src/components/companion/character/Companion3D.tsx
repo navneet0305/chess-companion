@@ -431,7 +431,7 @@ export default function Companion3D({
   if (webglFailed) {
     return (
       <img
-        src="/companions/bruno-idle.jpg"
+        src={`${import.meta.env.BASE_URL}companions/bruno-idle.jpg`}
         alt="Bruno companion"
         style={{ width: size, height: size }}
         className="rounded-2xl object-cover object-top"
