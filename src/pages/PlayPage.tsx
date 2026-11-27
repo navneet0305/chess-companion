@@ -878,6 +878,8 @@ export default function PlayPage() {
 
           {/* Companion Interactive Controls & Voice / Personality / Match Bets */}
           <CompanionSidebarControls
+            character={companion.character}
+            onSelectCharacter={companion.setCharacter}
             characterName={companion.characterName}
             characterTitle={companion.characterTitle}
             mood={companion.mood}

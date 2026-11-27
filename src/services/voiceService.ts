@@ -129,6 +129,7 @@ const CHARACTER_VOICE_DEFAULTS: Partial<Record<CharacterBase, {
   pitchOffset: number;
 }>> = {
   bruno: { openAiVoice: 'fable', streamElementsVoice: 'Brian', pitchOffset: -0.03 },
+  crowned: { openAiVoice: 'fable', streamElementsVoice: 'Brian', pitchOffset: 0.04 },
   luffy: { openAiVoice: 'echo', streamElementsVoice: 'Joey', pitchOffset: 0.05 },
   zoro: { openAiVoice: 'onyx', streamElementsVoice: 'Matthew', pitchOffset: -0.08 },
   gojo: { openAiVoice: 'fable', streamElementsVoice: 'Brian', pitchOffset: 0.0 },

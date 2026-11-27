@@ -50,6 +50,16 @@ export const CHARACTER_PROFILES: Record<CharacterBase, {
 }> = {
   bruno: {
     name: 'Bruno',
+    title: 'COMEDY MAESTRO 🎭',
+    skin: '#d99b66', // Warm expressive human skin
+    skinShadow: '#92400e',
+    hair: '#1c1917', // Expressive dark maestro hair
+    hairStyle: 'oscar',
+    collarStyle: 'turtleneck',
+    hasMustache: true,
+  },
+  crowned: {
+    name: 'Crown Mascot',
     title: 'CROWNED VIBES 👑',
     skin: '#f4e8d8',
     skinShadow: '#ebd7c2',
@@ -165,8 +175,8 @@ export default function CompanionAvatar({
   accessory = 'none',
   palette = 'ruby',
 }: CompanionAvatarProps) {
-  // Render real-time interactive 3D Bruno companion with free movement & condition skits
-  if (character === 'bruno' || character === 'mateo' || character === 'oscar') {
+  // Render real-time interactive 3D Bruno or Crowned companion with free movement & condition skits
+  if (character === 'bruno' || character === 'crowned' || character === 'mateo' || character === 'oscar') {
     const isShocked = state === 'shocked' || state === 'facepalm' || state === 'nervous';
     const isHyped = state === 'happy' || state === 'excited' || state === 'celebrating' || state === 'victory';
 
@@ -176,7 +186,7 @@ export default function CompanionAvatar({
           style={{ width: size, height: size }}
           className="relative flex items-center justify-center overflow-visible select-none"
         >
-          {/* Ambient floor shadow under shoes so full-body 3D Bruno stands cleanly without a card frame */}
+          {/* Ambient floor shadow under shoes so full-body 3D character stands cleanly without a card frame */}
           <div
             className="absolute bottom-1 left-1/2 -translate-x-1/2 w-[56%] h-3 rounded-full blur-sm pointer-events-none transition-all duration-300"
             style={{
@@ -191,6 +201,7 @@ export default function CompanionAvatar({
           />
           <div className="relative z-10 drop-shadow-[0_10px_18px_rgba(0,0,0,0.65)]">
             <Companion3D
+              character={character}
               state={state}
               skit={skit}
               isSpeaking={isSpeaking}
@@ -209,6 +220,7 @@ export default function CompanionAvatar({
         className="relative rounded-2xl overflow-hidden shadow-2xl border border-[#363948] bg-gradient-to-b from-[#1e212b] to-[#121318] select-none"
       >
         <Companion3D
+          character={character}
           state={state}
           skit={skit}
           isSpeaking={isSpeaking}

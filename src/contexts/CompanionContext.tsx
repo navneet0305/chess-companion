@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Personality } from '../types/companion';
 
-export type CharacterBase = 'bruno' | 'luffy' | 'zoro' | 'gojo' | 'mateo' | 'oscar' | 'gambit' | 'rookus' | 'knightly' | 'bishop' | 'queenie';
+export type CharacterBase = 'bruno' | 'crowned' | 'luffy' | 'zoro' | 'gojo' | 'mateo' | 'oscar' | 'gambit' | 'rookus' | 'knightly' | 'bishop' | 'queenie';
 export type HeadwearType = 'none' | 'santa' | 'crown' | 'headphones' | 'detective' | 'wizard';
 export type AccessoryType = 'none' | 'bowtie' | 'sunglasses' | 'medal' | 'scarf';
 export type ColorPalette = 'mint' | 'cyan' | 'ruby' | 'gold' | 'purple';
@@ -47,10 +47,6 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Automatically migrate previous characters to Luffy if user requested anime
-        if (parsed.character === 'mateo' || parsed.character === 'oscar') {
-          parsed.character = 'luffy';
-        }
         return { ...DEFAULT_CUSTOMIZATION, ...parsed };
       }
     } catch {}

@@ -10,9 +10,12 @@ import {
 } from '../../services/voiceService';
 import type { Personality } from '../../types/companion';
 import type { CompanionBet } from '../../lib/companionBets';
+import type { CharacterBase } from '../../contexts/CompanionContext';
 import { PERSONALITY_LABELS } from '../../hooks/useCompanionController';
 
 interface CompanionSidebarControlsProps {
+  character?: CharacterBase;
+  onSelectCharacter?: (c: CharacterBase) => void;
   characterName: string;
   characterTitle: string;
   mood: { text: string; icon: string; color: string };
@@ -37,6 +40,8 @@ interface CompanionSidebarControlsProps {
  * personality selector, Hint / Board Vibe / Hype / Free Roam actions, and live Dare/Bet).
  */
 export default function CompanionSidebarControls({
+  character,
+  onSelectCharacter,
   characterName,
   characterTitle,
   mood,
@@ -99,6 +104,36 @@ export default function CompanionSidebarControls({
           title={isVoiceMuted ? 'Unmute Voice' : 'Mute Voice'}
         >
           {isVoiceMuted ? '🔇 Muted' : '🔊 Sound'}
+        </button>
+      </div>
+
+      {/* Quick 1-Click Companion Switcher between Old (Bruno) and Existing (Crown Mascot) */}
+      <div className="flex items-center gap-1.5 p-1 bg-[#141414] rounded-lg border border-[#2a2a2a]">
+        <button
+          type="button"
+          onClick={() => onSelectCharacter?.('bruno')}
+          className={`flex-1 py-1 px-2 rounded text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+            character === 'bruno' || character === 'mateo'
+              ? 'bg-amber-500/25 text-amber-200 border border-amber-500/50 shadow-sm'
+              : 'text-gray-400 hover:text-gray-200 hover:bg-[#202020]'
+          }`}
+          title="Switch to Classic Maestro Bruno (Tailored Blazer, Mustache, Espresso)"
+        >
+          <span>🎭</span>
+          <span>Bruno (Classic)</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onSelectCharacter?.('crowned')}
+          className={`flex-1 py-1 px-2 rounded text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+            character === 'crowned'
+              ? 'bg-purple-500/25 text-purple-200 border border-purple-500/50 shadow-sm'
+              : 'text-gray-400 hover:text-gray-200 hover:bg-[#202020]'
+          }`}
+          title="Switch to Crown Mascot (Purple Headphones, Crown, Clean Smirk)"
+        >
+          <span>👑</span>
+          <span>Crown Mascot</span>
         </button>
       </div>
 

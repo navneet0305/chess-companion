@@ -60,7 +60,7 @@ export function useCompanionController({
   onPersonalityChange,
 }: UseCompanionControllerArgs) {
   const { soundEnabled } = useSettings();
-  const { character, headwear, accessory, palette } = useCompanion();
+  const { character, setCharacter, headwear, accessory, palette } = useCompanion();
 
   const [animationState, setAnimationState] = useState<AnimationState>('idle');
   const [currentText, setCurrentText] = useState<string>(
@@ -339,6 +339,7 @@ export function useCompanionController({
 
   return {
     character,
+    setCharacter,
     headwear,
     accessory,
     palette,

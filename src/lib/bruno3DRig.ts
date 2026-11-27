@@ -597,6 +597,9 @@ export function createBruno3DRig(): Bruno3DRig {
   };
 }
 
+export type CrownedMascot3DRig = Bruno3DRig;
+export const createCrownedMascot3DRig = createBruno3DRig;
+
 /**
  * Builds a recognizable miniature 3D chess piece for the companion to pick up and carry off the board.
  */

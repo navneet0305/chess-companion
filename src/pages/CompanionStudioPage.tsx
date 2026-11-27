@@ -9,7 +9,8 @@ import type { Personality, AnimationState } from '../types/companion';
 import Button from '../components/ui/Button';
 
 const CHARACTERS: { id: CharacterBase; name: string; desc: string; icon: string }[] = [
-  { id: 'bruno', name: 'Bruno', desc: 'A cheeky crowned 3D mascot with purple headphones, cool half-lidded smirk, finger-gun swagger, and chunky purple sneakers', icon: '👑' },
+  { id: 'bruno', name: 'Bruno (Classic Maestro)', desc: 'The iconic dapper Italian chess master with his signature mustache, tailored navy blazer, burgundy turtleneck, and espresso sips', icon: '🎭' },
+  { id: 'crowned', name: 'Crown Mascot (3D Bean)', desc: 'The cheeky crowned 3D mascot with purple headphones, white crown decals, cool half-lidded smirk, finger-gun swagger, and chunky purple sneakers', icon: '👑' },
   { id: 'luffy', name: 'Monkey D. Luffy', desc: 'The fearless future Pirate King with his iconic straw hat, eye scar, open red vest, and rubbery tactical energy', icon: '👒' },
   { id: 'zoro', name: 'Roronoa Zoro', desc: 'The legendary master swordsman with moss-green hair, eye scar, triple golden earrings, and fierce tactical precision', icon: '⚔️' },
   { id: 'gojo', name: 'Satoru Gojo', desc: 'The strongest jujutsu sorcerer with spiky white hair, blindfold / glowing Six Eyes, and infinite tactical swagger', icon: '👁️' },

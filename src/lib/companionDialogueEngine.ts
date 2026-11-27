@@ -67,6 +67,61 @@ const CHARACTER_BONUS_LINES: Partial<
 > = {
   bruno: {
     start: [
+      { text: "Ah, another masterpiece in the making! What opening are we cooking up today?", animation: 'confident' },
+      { text: "Alright partner, it's you and me against the machine. Ready when you are!", animation: 'excited' },
+      { text: "Let's paint some chaos across these 64 squares — don't leave me hanging on move four!", animation: 'happy' },
+    ],
+    brilliant: [
+      { text: "BRAVO! Wait, did you actually calculate that, or are we just vibing at Grandmaster level?!", animation: 'celebrating' },
+      { text: "Mamma mia! Even I dropped my monocle watching that brilliance! Keep going!", animation: 'shocked' },
+    ],
+    good_move: [
+      { text: "Ooh, now that actually had a plan behind it! What are we targeting next?", animation: 'happy' },
+      { text: "Look at us looking respectable! Keep tightening the screws on them.", animation: 'confident' },
+      { text: "Not bad at all — my mustache approves of that square.", animation: 'happy' },
+    ],
+    capture: [
+      { text: "Yoink! Clean snag — are we hunting their King next or picking off more pawns?", animation: 'happy' },
+      { text: "That's one less defender in our way. Feel the momentum shifting?", animation: 'confident' },
+    ],
+    check: [
+      { text: "CHECK! Look at their King scrambling — think we can keep the attack rolling?", animation: 'excited' },
+    ],
+    castling: [
+      { text: "King safely behind the castle walls! Now we activate the rooks, maestro.", animation: 'confident' },
+    ],
+    opponent_blunder: [
+      { text: "Wait a second — did Stockfish just hand us a gift wrapped in red ribbon?! Take it!", animation: 'excited' },
+    ],
+    hanging_piece: [
+      { text: "Psst — quick check, is that piece defended or are we donating to charity?", animation: 'nervous' },
+    ],
+    missed_opportunity: [
+      { text: "Oof, we had a real knockout punch right there! We catch it next turn, promise.", animation: 'facepalm' },
+    ],
+    idle_thinking: [
+      { text: "*sips espresso* Take your time. Great tactics brew slowly.", animation: 'thinking' },
+      { text: "My mustache senses a breakthrough. What square are your eyes on?", animation: 'idle' },
+      { text: "Deep breath, partner. Solid moves beat rapid blunders every day of the week.", animation: 'confident' },
+    ],
+    blunder: [
+      { text: "Mamma mia! My mustache is quivering in disbelief... how do we salvage this?", animation: 'facepalm' },
+      { text: "Hold up, was that a spicy sacrifice or did your mouse slip?! Be honest with me!", animation: 'shocked' },
+    ],
+    capture_queen: [
+      { text: "THE QUEEN IS GONE! Pour an espresso, we are dining in the endgame now!", animation: 'celebrating' },
+    ],
+    lost_queen: [
+      { text: "Mamma mia, our Queen left the board! Stay calm, we play for the swindle!", animation: 'facepalm' },
+    ],
+    interaction_click: [
+      { text: "Careful with the blazer, it's custom Italian tailoring!", animation: 'confident' },
+      { text: "*twirls mustache thoughtfully* Seeing a tactic or just checking in?", animation: 'happy' },
+      { text: "Espresso in hand, brain in gear — let's find the winning move!", animation: 'excited' },
+    ],
+  },
+  crowned: {
+    start: [
       { text: "Headphones on, crown floating — let's wreck this board! What opening are we cooking?", animation: 'confident' },
       { text: "Alright partner, it's you, me, and the purple kicks against Stockfish. Ready?", animation: 'excited' },
       { text: "Beats queued up, smirk locked in — don't leave me hanging on move four!", animation: 'happy' },
@@ -287,7 +342,7 @@ function tryPickBrunoScriptBeat(
   ctx?: DialogueContext
 ): DialogueEntry | null {
   const char = ctx?.character || 'bruno';
-  if (char !== 'bruno' && char !== 'mateo' && char !== 'oscar') return null;
+  if (char !== 'bruno' && char !== 'crowned' && char !== 'mateo' && char !== 'oscar') return null;
 
   const claim = (key: string, entry: DialogueEntry): DialogueEntry | null => {
     if (usedScriptBeats.has(key)) return null;
